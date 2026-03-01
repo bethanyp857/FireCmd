@@ -313,10 +313,75 @@ textarea{resize:vertical;min-height:80px;}
 .place-hint{background:rgba(255,69,0,.12);border:1px solid rgba(255,69,0,.3);border-radius:3px;padding:6px 12px;font-family:var(--fm);font-size:11px;color:var(--fire);letter-spacing:1px;animation:pulse2 1.5s ease-in-out infinite;}
 @keyframes pulse2{0%,100%{opacity:1}50%{opacity:.6}}
 /* RESPONSIVE */
+/* ═══ MOBILE BOTTOM NAV ═══ */
+.mob-nav{position:fixed;bottom:0;left:0;right:0;z-index:900;
+  background:var(--bg2);border-top:1px solid var(--bdr);
+  padding-bottom:env(safe-area-inset-bottom);
+  display:none;flex-direction:row;align-items:stretch;}
+.mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:8px 2px;gap:3px;cursor:pointer;
+  color:var(--txt2);font-family:var(--fm);font-size:8px;letter-spacing:.5px;
+  text-transform:uppercase;border:none;background:none;min-height:56px;
+  -webkit-tap-highlight-color:transparent;transition:color .15s;}
+.mob-nav-item .mni{font-size:19px;line-height:1;}
+.mob-nav-item.on{color:var(--fire);}
+.mob-more-sheet{position:fixed;bottom:0;left:0;right:0;z-index:960;
+  background:var(--bg2);border-top:2px solid var(--fire);
+  padding:14px 12px calc(14px + env(safe-area-inset-bottom));
+  display:none;flex-wrap:wrap;gap:8px;max-height:60vh;overflow-y:auto;}
+.mob-more-sheet.on{display:flex;}
+.mob-more-item{flex:1;min-width:calc(33.33% - 8px);display:flex;
+  flex-direction:column;align-items:center;gap:5px;padding:12px 6px;
+  background:var(--card);border:1px solid var(--bdr);border-radius:6px;
+  cursor:pointer;font-family:var(--fm);font-size:9px;color:var(--txt2);
+  letter-spacing:.5px;text-align:center;-webkit-tap-highlight-color:transparent;}
+.mob-more-item .mni{font-size:22px;}
+.mob-more-item.on{color:var(--fire);border-color:var(--fire);}
+.mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:950;}
+.mob-overlay.on{display:block;}
+
 @media(max-width:768px){
-  .sb{width:54px;}.sblogo h2,.dbd,.ni span,.ui{display:none;}
-  .ni{justify-content:center;padding:11px;}.pg{padding:12px;}
-  .fr2,.fr3,.tc2{grid-template-columns:1fr;}.sgrid{grid-template-columns:1fr 1fr;}
+  .sb{display:none!important;}
+  .mob-nav{display:flex;}
+  #sa{flex-direction:column;}
+  .mc{padding-bottom:calc(64px + env(safe-area-inset-bottom));}
+  .pg{padding:12px 12px 16px;}
+  .fr2,.fr3,.tc2{grid-template-columns:1fr!important;}
+  .sgrid{grid-template-columns:1fr 1fr;gap:8px;}
+  .pt{font-size:28px!important;}.ps{font-size:10px!important;}
+  .pa{flex-wrap:wrap;gap:6px;}.pa .btn{font-size:11px;padding:8px 12px;}
+  .sbar{flex-direction:column;gap:8px;}
+  .sbar input,.sbar select{max-width:100%!important;width:100%;}
+  .tcard{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{min-width:480px;}
+  th,td{padding:8px 10px;font-size:12px;}
+  .sc{padding:12px;}.sv{font-size:22px!important;}
+  .mo{align-items:flex-end!important;padding:0!important;}
+  .md{width:100%!important;max-width:100%!important;max-height:90vh;
+    border-radius:16px 16px 0 0!important;overflow:hidden;
+    display:flex;flex-direction:column;}
+  .mb{padding:14px 16px;overflow-y:auto;flex:1;
+    padding-bottom:env(safe-area-inset-bottom);}
+  .mh{padding:14px 16px 12px;position:sticky;top:0;
+    background:var(--card);z-index:2;border-radius:16px 16px 0 0;}
+  .mf{padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:var(--card);border-top:1px solid var(--bdr);flex-shrink:0;}
+  .btn{min-height:42px;}
+  .bsm{min-height:36px!important;}
+  input,select,textarea{font-size:16px!important;}
+  .map-wrap{height:55vw;min-height:260px;}
+  #leaflet-map{height:100%;}
+  .lbox{padding:14px;}.lcard{padding:18px 14px;}
+  .llogo h1{font-size:36px;}
+  .mchdr{padding:12px;}.mcbody{padding:0 12px 12px;}
+  .station-hdr{flex-wrap:wrap;gap:8px;}
+  .ac{flex-wrap:wrap;gap:4px;}
+  .ph{margin-bottom:12px;gap:8px;}
+  .mcard{margin-bottom:8px;}
+}
+@media(max-width:400px){
+  .sgrid{grid-template-columns:1fr;}
+  .pt{font-size:22px!important;}
 }
 </style>
 </head>
@@ -496,6 +561,46 @@ textarea{resize:vertical;min-height:80px;}
       <button class="blogout" onclick="event.stopPropagation();doLogout()" title="Logout">⏻</button>
     </div>
   </nav>
+
+  <!-- ═══ MOBILE BOTTOM NAV ═══ -->
+  <div class="mob-overlay" id="mob-overlay" onclick="closeMobMore()"></div>
+  <div class="mob-nav" id="mob-nav">
+    <button class="mob-nav-item on" id="mni-dash" onclick="mobGo('dash','mni-dash')">
+      <span class="mni">📊</span><span>Dashboard</span></button>
+    <button class="mob-nav-item" id="mni-inc" onclick="mobGo('inc','mni-inc')">
+      <span class="mni">🔥</span><span>Incidents</span></button>
+    <button class="mob-nav-item" id="mni-map" onclick="mobGo('map','mni-map')">
+      <span class="mni">🗺️</span><span>Map</span></button>
+    <button class="mob-nav-item" id="mni-minutes" onclick="mobGo('minutes','mni-minutes')">
+      <span class="mni">📋</span><span>Minutes</span></button>
+    <button class="mob-nav-item" id="mni-more" onclick="toggleMobMore()">
+      <span class="mni">☰</span><span>More</span></button>
+  </div>
+  <!-- More sheet -->
+  <div class="mob-more-sheet" id="mob-more-sheet">
+    <div class="mob-more-item" id="mni-drone" onclick="mobGo('drone','mni-drone')">
+      <span class="mni">🚁</span><span>Drone</span></div>
+    <div class="mob-more-item" id="mni-deptpro" onclick="mobGo('deptpro','mni-deptpro')">
+      <span class="mni">🏛️</span><span>Dept Profile</span></div>
+    <div class="mob-more-item" id="mni-events" onclick="mobGo('events','mni-events')">
+      <span class="mni">📅</span><span>Events</span></div>
+    <div class="mob-more-item" id="mni-equip" onclick="mobGo('equip','mni-equip')">
+      <span class="mni">🚒</span><span>Equipment</span></div>
+    <div class="mob-more-item" id="mni-maint" onclick="mobGo('maint','mni-maint')">
+      <span class="mni">🔧</span><span>Maintenance</span></div>
+    <div class="mob-more-item" id="mni-pers" onclick="mobGo('pers','mni-pers')">
+      <span class="mni">👥</span><span>Personnel</span></div>
+    <div class="mob-more-item" id="mni-fin" onclick="mobGo('fin','mni-fin')">
+      <span class="mni">💰</span><span>Finance</span></div>
+    <div class="mob-more-item" id="mni-fr" onclick="mobGo('fr','mni-fr')">
+      <span class="mni">🎟️</span><span>Fundraisers</span></div>
+    <div class="mob-more-item" id="mni-gr" onclick="mobGo('gr','mni-gr')">
+      <span class="mni">📝</span><span>Grants</span></div>
+    <div class="mob-more-item" id="mni-userpro" onclick="mobGo('userpro','mni-userpro')">
+      <span class="mni">👤</span><span>My Profile</span></div>
+    <div class="mob-more-item" style="border-color:var(--red);color:var(--red)" onclick="doLogout()">
+      <span class="mni">⏻</span><span>Sign Out</span></div>
+  </div>
 
   <main class="mc">
 
@@ -2313,6 +2418,14 @@ function go(page,el){
   }
   if(page==='deptpro'){ rDeptPro(); renderCodes(); }
   if(page==='fin'){ rFin(); }
+  // Sync mobile bottom nav highlight
+  const _mmap={dash:'mni-dash',inc:'mni-inc',map:'mni-map',minutes:'mni-minutes',
+    drone:'mni-drone',deptpro:'mni-deptpro',events:'mni-events',equip:'mni-equip',
+    maint:'mni-maint',pers:'mni-pers',fin:'mni-fin',fr:'mni-fr',gr:'mni-gr',userpro:'mni-userpro'};
+  document.querySelectorAll('.mob-nav-item,.mob-more-item').forEach(b=>b.classList.remove('on'));
+  const _mb=G(_mmap[page]); if(_mb) _mb.classList.add('on');
+  const _primary=['dash','inc','map','minutes'];
+  if(!_primary.includes(page)) { const _mm=G('mni-more'); if(_mm) _mm.classList.add('on'); }
 }
 
 function toast(msg,type=''){
@@ -2429,6 +2542,34 @@ waitForFB(()=>{
     else showScreen('sl');
   });
 });
+
+// ═══ MOBILE NAV ═══
+function mobGo(page, btnId){
+  closeMobMore();
+  // Update mobile nav active state
+  document.querySelectorAll('.mob-nav-item,.mob-more-item').forEach(b=>b.classList.remove('on'));
+  const btn=G(btnId); if(btn) btn.classList.add('on');
+  // Also sync desktop nav
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  const desktopNi=document.querySelector(`.ni[onclick*="go('${page}"]`);
+  if(desktopNi) desktopNi.classList.add('on');
+  // Navigate
+  go(page, desktopNi);
+}
+function toggleMobMore(){
+  const sheet=G('mob-more-sheet'), overlay=G('mob-overlay');
+  const isOpen=sheet.classList.contains('on');
+  sheet.classList.toggle('on',!isOpen);
+  overlay.classList.toggle('on',!isOpen);
+  G('mni-more').classList.toggle('on',!isOpen);
+}
+function closeMobMore(){
+  G('mob-more-sheet')?.classList.remove('on');
+  G('mob-overlay')?.classList.remove('on');
+  G('mni-more')?.classList.remove('on');
+}
+// Sync mobile nav when desktop nav is used
+
 
 // Register service worker for PWA
 if('serviceWorker' in navigator){
