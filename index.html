@@ -280,18 +280,23 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .edmo{font-family:var(--fm);font-size:9px;color:var(--fire);letter-spacing:2px;text-transform:uppercase;}
 .edday{font-family:var(--fd);font-size:24px;line-height:1;}
 /* PROFILE HERO */
-.phero{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:24px;margin-bottom:16px;position:relative;}
+.phero{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:16px;margin-bottom:16px;position:relative;overflow:hidden;}
 .phero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--fire),transparent);}
-.phero-inner{display:flex;gap:20px;align-items:flex-start;}
-.pbigav{width:72px;height:72px;border-radius:50%;background:var(--glow);border:3px solid var(--fire);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:28px;color:var(--fire);flex-shrink:0;overflow:hidden;position:relative;}
+.phero-inner{display:flex;gap:14px;align-items:flex-start;flex-wrap:nowrap;min-width:0;}
+.pbigav{width:68px;height:68px;border-radius:50%;background:var(--glow);border:3px solid var(--fire);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:26px;color:var(--fire);flex-shrink:0;overflow:hidden;position:relative;}
 .pbigav img{width:100%;height:100%;object-fit:cover;}
-.pname{font-family:var(--fd);font-size:32px;letter-spacing:2px;}
-.prole{font-family:var(--fm);font-size:12px;color:var(--fire);letter-spacing:2px;margin-top:3px;}
-.pdept{font-size:13px;color:var(--txtm);margin-top:4px;}
-.igrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
-.iitem{background:var(--elev);border:1px solid var(--bdr);border-radius:3px;padding:9px 13px;}
-.ilbl{font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:2px;margin-bottom:3px;}
-.ival{font-size:13px;font-weight:600;}
+.phero-info{flex:1;min-width:0;overflow:hidden;}
+.pname{font-family:var(--fd);font-size:26px;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.prole{font-family:var(--fm);font-size:11px;color:var(--fire);letter-spacing:2px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pdept{font-size:12px;color:var(--txtm);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.igrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;width:100%;}
+.iitem{background:var(--elev);border:1px solid var(--bdr);border-radius:3px;padding:8px 10px;min-width:0;overflow:hidden;}
+.ilbl{font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-bottom:3px;white-space:nowrap;}
+.ival{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media(max-width:400px){
+  .igrid{grid-template-columns:1fr;}
+  .pname{font-size:22px;}
+}
 /* DEPT PROFILE */
 .dhero{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:24px;margin-bottom:16px;position:relative;overflow:hidden;}
 .dhero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--fire),transparent);}
@@ -834,7 +839,7 @@ textarea{resize:vertical;min-height:80px;}
             <input type="file" id="user-photo-input" style="display:none" accept="image/*" onchange="handleUserPhoto(event)">
             <button class="btn bsm" style="margin-top:6px;width:72px;font-size:10px;padding:4px 8px" onclick="G('user-photo-input').click()">📷 Photo</button>
           </div>
-          <div style="flex:1">
+          <div class="phero-info">
             <div class="pname" id="pnm-disp">—</div>
             <div class="prole" id="prole-disp">—</div>
             <div class="pdept" id="pdept-disp">—</div>
@@ -842,7 +847,7 @@ textarea{resize:vertical;min-height:80px;}
               <div class="iitem"><div class="ilbl">Email</div><div class="ival" id="pemail-disp">—</div></div>
               <div class="iitem"><div class="ilbl">Phone</div><div class="ival" id="pphone-disp">—</div></div>
               <div class="iitem"><div class="ilbl">Badge #</div><div class="ival" id="pbadge-disp">—</div></div>
-              <div class="iitem"><div class="ilbl">Years of Service</div><div class="ival" id="pyrs-disp">—</div></div>
+              <div class="iitem"><div class="ilbl">Years</div><div class="ival" id="pyrs-disp">—</div></div>
             </div>
           </div>
         </div>
@@ -889,14 +894,14 @@ textarea{resize:vertical;min-height:80px;}
     <div id="pg-equip" class="pg">
       <div class="ph"><div><div class="pt">EQUIP<span>MENT</span></div><div class="ps">APPARATUS & GEAR INVENTORY</div></div><div class="pa" id="equip-act"></div></div>
       <div id="equip-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
-      <div class="tcard"><table><thead><tr><th>Item</th><th>Type</th><th>Year/Serial</th><th>Condition</th><th>Assigned</th><th>Next Service</th><th>Actions</th></tr></thead><tbody id="equip-tb"></tbody></table></div>
+      <div class="tcard"><div id="equip-tb"></div></div>
     </div>
 
     <!-- MAINTENANCE -->
     <div id="pg-maint" class="pg">
       <div class="ph"><div><div class="pt">MAIN<span>TENANCE</span></div><div class="ps">SERVICE & REPAIR RECORDS</div></div><div class="pa" id="maint-act"></div></div>
       <div id="maint-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
-      <div class="tcard"><table><thead><tr><th>Equipment</th><th>Type</th><th>Date</th><th>Performed By</th><th>Cost</th><th>Next Due</th><th>Actions</th></tr></thead><tbody id="maint-tb"></tbody></table></div>
+      <div class="tcard"><div id="maint-tb"></div></div>
     </div>
 
     <!-- PERSONNEL -->
@@ -926,7 +931,7 @@ textarea{resize:vertical;min-height:80px;}
           <div class="sc cf"><div class="sl2">Total Expenses</div><div class="sv" id="fin-tot-ex">$0</div><div class="ss">Equipment, payroll, utilities</div></div>
           <div class="sc ca"><div class="sl2">Net Balance</div><div class="sv" id="fin-net">$0</div><div class="ss">YTD surplus/deficit</div></div>
         </div>
-        <div class="tcard"><div class="thead2"><div class="ttl">TRANSACTIONS</div></div><table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th>Amount</th><th>Actions</th></tr></thead><tbody id="fin-tb"></tbody></table></div>
+        <div class="tcard"><div class="thead2"><div class="ttl">TRANSACTIONS</div></div><div id="fin-tb"></div></div>
       </div>
     </div>
 
@@ -934,14 +939,14 @@ textarea{resize:vertical;min-height:80px;}
     <div id="pg-fr" class="pg">
       <div class="ph"><div><div class="pt">FUND<span>RAISERS</span></div><div class="ps">CAMPAIGNS & EVENTS</div></div><div class="pa" id="fr-act"></div></div>
       <div id="fr-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
-      <div class="tcard"><table><thead><tr><th>Event</th><th>Type</th><th>Date</th><th>Goal</th><th>Raised</th><th>Net</th><th>Status</th><th>Actions</th></tr></thead><tbody id="fr-tb"></tbody></table></div>
+      <div class="tcard"><div id="fr-tb"></div></div>
     </div>
 
     <!-- GRANTS — visible to all -->
     <div id="pg-gr" class="pg">
       <div class="ph"><div><div class="pt">GRANT<span>S</span></div><div class="ps">APPLICATIONS & AWARDS TRACKER</div></div><div class="pa" id="gr-act"></div></div>
       <div id="gr-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
-      <div class="tcard"><table><thead><tr><th>Grant Name</th><th>Organization</th><th>Requested</th><th>Awarded</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead><tbody id="gr-tb"></tbody></table></div>
+      <div class="tcard"><div id="gr-tb"></div></div>
     </div>
 
   </main>
@@ -2345,19 +2350,59 @@ function rEvt(){
       ${CU&&CU.isAdmin?`<div style="flex-shrink:0">${eb(`eEvt(${r.id})`)}</div>`:''}
     </div>`;}).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO UPCOMING EVENTS</div>`;}
 
-function rEquip(){G('equip-tb').innerHTML=(getDeptData('equipment')||[]).map(r=>`<tr>
-  <td><strong>${r.nm}</strong></td><td>${bT(r.type)}</td>
-  <td style="font-family:var(--fm);font-size:11px">${r.yr||'—'} · ${r.ser||'—'}</td>
-  <td>${bC(r.cond)}</td><td>${r.asgn||'—'}</td>
-  <td style="color:${r.cond==='Fair'||r.cond==='Poor'?'var(--red)':'inherit'}">${r.svc||'—'}</td>
-  <td><div class="ac">${eb(`eEquip(${r.id})`)}</div></td>
-</tr>`).join('')||`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO EQUIPMENT ON FILE</td></tr>`;}
+function rEquip(){
+  const list=getDeptData('equipment')||[];
+  const condColor=c=>c==='Poor'?'var(--red)':c==='Fair'?'var(--amb)':'var(--grn)';
+  const typeIcon={Apparatus:'🚒',SCBA:'💨',Tool:'🔧',PPE:'🦺',Drone:'🚁',Communication:'📻',Other:'📦'};
+  G('equip-tb').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('eq-${r.id}')">
+      <div class="mctypeicon" style="background:rgba(0,188,212,.1)">${typeIcon[r.type]||'🔧'}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.nm}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">${bT(r.type)} · ${bC(r.cond)} · ${r.asgn||'Unassigned'}</div>
+      </div>
+      <span style="color:var(--txtm);font-size:16px" id="arr-eq-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="eq-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">YEAR</span><br>${r.yr||'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">SERIAL</span><br>${r.ser||'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">CONDITION</span><br><span style="color:${condColor(r.cond)}">${r.cond||'—'}</span></div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">ASSIGNED TO</span><br>${r.asgn||'—'}</div>
+        <div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">LAST SERVICE</span><br><span style="color:${r.cond==='Fair'||r.cond==='Poor'?'var(--red)':'inherit'}">${r.svc||'—'}</span></div>
+        ${r.notes?`<div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">NOTES</span><br>${r.notes}</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eEquip(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('equipment',${r.id})">🗑</button>`:''}
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO EQUIPMENT ON FILE</div>`;
+}
 
-function rMaint(){G('maint-tb').innerHTML=(getDeptData('maintenance')||[]).map(r=>`<tr>
-  <td><strong>${r.equip}</strong></td><td>${bS(r.type)}</td><td>${r.date}</td>
-  <td>${r.ven||'—'}</td><td style="font-family:var(--fm)">${$m(r.cost)}</td><td>${r.next||'—'}</td>
-  <td><div class="ac">${eb(`eMaint(${r.id})`)}</div></td>
-</tr>`).join('')||`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO MAINTENANCE RECORDS</td></tr>`;}
+function rMaint(){
+  const list=getDeptData('maintenance')||[];
+  G('maint-tb').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('mt-${r.id}')">
+      <div class="mctypeicon" style="background:rgba(255,179,0,.1)">🔩</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.equip}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">${bS(r.type)} · ${r.date} · Next: ${r.next||'—'}</div>
+      </div>
+      <span style="color:var(--txtm);font-size:16px" id="arr-mt-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="mt-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">DATE</span><br>${r.date}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">TYPE</span><br>${r.type}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">VENDOR</span><br>${r.ven||'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">COST</span><br>${$m(r.cost)}</div>
+        <div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">NEXT DUE</span><br>${r.next||'—'}</div>
+        ${r.notes?`<div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">NOTES</span><br>${r.notes}</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eMaint(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('maintenance',${r.id})">🗑</button>`:''}
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO MAINTENANCE RECORDS</div>`;
+}
 
 function rPers(){
   // Show all personnel in cache for this dept — also catch records where deptId may be missing
@@ -2384,30 +2429,87 @@ function rFin(){
   G('fin-tot-ex').textContent='$'+expense.toLocaleString();
   const net=income-expense;
   G('fin-net').textContent=(net>=0?'$':'-$')+Math.abs(net).toLocaleString();
-  G('fin-tb').innerHTML=list.map(r=>`<tr>
-    <td>${r.date}</td>
-    <td>${r.desc}${r.srcType?`<span style="font-family:var(--fm);font-size:9px;color:var(--txtm);border:1px solid var(--bdr);border-radius:2px;padding:1px 5px;margin-left:6px">AUTO · ${r.srcType.toUpperCase()}</span>`:''}</td>
-    <td><span class="badge bgr">${r.cat}</span></td>
-    <td>${bS(r.type)}</td>
-    <td style="font-family:var(--fm);color:${r.type==='Income'?'var(--grn)':'var(--red)'}">${r.type==='Income'?'+':'-'}${$m(r.amt)}</td>
-    <td><div class="ac">${r.srcType?`<span style="font-family:var(--fm);font-size:10px;color:var(--txtm)" title="Auto-generated — edit the source ${r.srcType}">🔗 Auto</span>`:eb(`eFin(${r.id})`)}</div></td>
-  </tr>`).join('')||`<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO TRANSACTIONS</td></tr>`;}
+  G('fin-tb').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('fn-${r.id}')">
+      <div class="mctypeicon" style="background:${r.type==='Income'?'rgba(0,230,118,.1)':'rgba(255,23,68,.1)'}">${r.type==='Income'?'💵':'💸'}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.desc}${r.srcType?` <span style="font-family:var(--fm);font-size:9px;color:var(--txtm);border:1px solid var(--bdr);border-radius:2px;padding:1px 4px">AUTO</span>`:''}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">${r.date} · <span class="badge bgr">${r.cat}</span></div>
+      </div>
+      <div style="font-family:var(--fm);font-size:14px;font-weight:700;color:${r.type==='Income'?'var(--grn)':'var(--red)'};margin-right:8px">${r.type==='Income'?'+':'-'}${$m(r.amt)}</div>
+      <span style="color:var(--txtm);font-size:16px" id="arr-fn-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="fn-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">DATE</span><br>${r.date}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">CATEGORY</span><br>${r.cat}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">TYPE</span><br>${bS(r.type)}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">AMOUNT</span><br><span style="color:${r.type==='Income'?'var(--grn)':'var(--red)'};font-weight:700">${r.type==='Income'?'+':'-'}${$m(r.amt)}</span></div>
+      </div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${r.srcType?`<span style="font-family:var(--fm);font-size:11px;color:var(--txtm)">🔗 Auto-generated from ${r.srcType}</span>`
+        :CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eFin(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('finance',${r.id})">🗑</button>`:''}
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO TRANSACTIONS</div>`;
+}
 
-function rFr(){G('fr-tb').innerHTML=(getDeptData('fundraisers')||[]).map(r=>`<tr>
-  <td><strong>${r.nm}</strong></td><td>${bT(r.type)}</td><td>${r.date}</td>
-  <td style="font-family:var(--fm)">${$m(r.goal)}</td>
-  <td style="font-family:var(--fm);color:${r.raised>0?'var(--grn)':'var(--txtm)'}">${r.raised>0?$m(r.raised):'—'}</td>
-  <td style="font-family:var(--fm);color:${(r.raised-r.exp)>0?'var(--grn)':'var(--txtm)'}">${r.raised>0?$m(r.raised-r.exp):'—'}</td>
-  <td>${bS(r.status)}</td><td><div class="ac">${eb(`eFr(${r.id})`)}</div></td>
-</tr>`).join('')||`<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO FUNDRAISERS</td></tr>`;}
+function rFr(){
+  const list=getDeptData('fundraisers')||[];
+  G('fr-tb').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('fr-${r.id}')">
+      <div class="mctypeicon" style="background:rgba(0,230,118,.1)">💰</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.nm}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">${bT(r.type)} · ${r.date} · ${bS(r.status)}</div>
+      </div>
+      <div style="text-align:right;margin-right:8px;font-family:var(--fm);font-size:12px">
+        <div style="color:var(--grn)">${r.raised>0?$m(r.raised):'$0'}</div>
+        <div style="color:var(--txtm);font-size:10px">of ${$m(r.goal)}</div>
+      </div>
+      <span style="color:var(--txtm);font-size:16px" id="arr-fr-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="fr-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">GOAL</span><br>${$m(r.goal)}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">RAISED</span><br><span style="color:var(--grn)">${r.raised>0?$m(r.raised):'—'}</span></div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">EXPENSES</span><br>${r.exp>0?$m(r.exp):'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">NET</span><br><span style="color:${(r.raised-r.exp)>0?'var(--grn)':'var(--txtm)'}">${r.raised>0?$m(r.raised-r.exp):'—'}</span></div>
+        ${r.desc?`<div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">DESCRIPTION</span><br>${r.desc}</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eFr(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('fundraisers',${r.id})">🗑</button>`:''}
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO FUNDRAISERS</div>`;
+}
 
-function rGr(){G('gr-tb').innerHTML=(getDeptData('grants')||[]).map(r=>`<tr>
-  <td><strong>${r.nm}</strong></td><td>${r.org}</td>
-  <td style="font-family:var(--fm)">${$m(r.req)}</td>
-  <td style="font-family:var(--fm);color:${r.award>0?'var(--grn)':r.status==='Denied'?'var(--red)':'var(--txtm)'}">${r.award>0?$m(r.award):r.status==='Denied'?'Denied':'Pending'}</td>
-  <td>${r.dead||'—'}</td><td>${bS(r.status)}</td>
-  <td><div class="ac">${eb(`eGr(${r.id})`)}</div></td>
-</tr>`).join('')||`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO GRANTS</td></tr>`;}
+function rGr(){
+  const list=getDeptData('grants')||[];
+  G('gr-tb').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('gr-${r.id}')">
+      <div class="mctypeicon" style="background:rgba(41,121,255,.12)">🏛️</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.nm}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">${r.org} · ${bS(r.status)} · Due: ${r.dead||'—'}</div>
+      </div>
+      <div style="text-align:right;margin-right:8px;font-family:var(--fm);font-size:12px">
+        <div style="color:${r.award>0?'var(--grn)':r.status==='Denied'?'var(--red)':'var(--txtm)'}">${r.award>0?$m(r.award):r.status==='Denied'?'Denied':'Pending'}</div>
+        <div style="color:var(--txtm);font-size:10px">req ${$m(r.req)}</div>
+      </div>
+      <span style="color:var(--txtm);font-size:16px" id="arr-gr-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="gr-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">ORGANIZATION</span><br>${r.org}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">DEADLINE</span><br>${r.dead||'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">REQUESTED</span><br>${$m(r.req)}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">AWARDED</span><br><span style="color:${r.award>0?'var(--grn)':r.status==='Denied'?'var(--red)':'var(--txtm)'}">${r.award>0?$m(r.award):r.status==='Denied'?'Denied':'—'}</span></div>
+        ${r.notes?`<div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">NOTES</span><br>${r.notes}</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eGr(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('grants',${r.id})">🗑</button>`:''}
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO GRANTS</div>`;
+}
 
 function rDashActivity(){
   const incs=getDeptData('incidents').slice(0,3);
