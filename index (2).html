@@ -1,0 +1,2627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fire Command — Shady Grove VFD</title>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff4500">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FireCommand">
+<link rel="apple-touch-icon" href="https://em-content.zobj.net/source/apple/354/fire_1f525.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Firebase v10 -->
+<script type="module">
+  import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+  import{getAuth,signInWithEmailAndPassword,createUserWithEmailAndPassword,
+    signOut,onAuthStateChanged,updatePassword}
+    from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+  import{getFirestore,doc,getDoc,setDoc,collection,getDocs,deleteDoc,serverTimestamp,writeBatch}
+    from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+  const cfg={
+    apiKey:"AIzaSyAFY6e-e33rJEaq9VzGXj9t5AUDKk1wD2g",
+    authDomain:"firecommand-1.firebaseapp.com",
+    projectId:"firecommand-1",
+    storageBucket:"firecommand-1.firebasestorage.app",
+    messagingSenderId:"839312094036",
+    appId:"1:839312094036:web:7251270384f763fe168ec1"
+  };
+
+  const app=initializeApp(cfg);
+  const AUTH=getAuth(app);
+  const DB=getFirestore(app);
+
+  // ── Auth helpers ──
+  window.fbSignIn  =(e,p)=>signInWithEmailAndPassword(AUTH,e,p);
+  window.fbSignUp  =(e,p)=>createUserWithEmailAndPassword(AUTH,e,p);
+  window.fbSignOut =()=>signOut(AUTH);
+  window.fbOnAuth  =(cb)=>onAuthStateChanged(AUTH,cb);
+  window.fbUpdPw   =(pw)=>updatePassword(AUTH.currentUser,pw);
+
+  // ── Firestore helpers ──
+  // Split a slash-separated path into segments for doc()
+  const seg=path=>path.split('/');
+  window.fbGetDoc  =(path)=>getDoc(doc(DB,...seg(path)));
+  window.fbSetDoc  =(path,data,opts)=>setDoc(doc(DB,...seg(path)),data,opts||{});
+  window.fbDelDoc  =(path)=>deleteDoc(doc(DB,...seg(path)));
+  // Also expose as fbDeleteDoc for any legacy references
+  window.fbDeleteDoc=window.fbDelDoc;
+  // Get all docs in a collection path
+  window.fbGetCol  =(path)=>getDocs(collection(DB,...seg(path)));
+  window.fbBatch   =()=>writeBatch(DB);
+  window.fbDoc2    =(path)=>doc(DB,...seg(path));
+  window.fbTS      =()=>serverTimestamp();
+
+  window.FB_READY=true;
+  document.dispatchEvent(new Event('fb-ready'));
+</script>
+<style>
+:root{--bg:#0a0a0c;--bg2:#111114;--card:#16161a;--elev:#1e1e24;--bdr:#2a2a35;--bdr2:#3a3a48;--fire:#ff4500;--fire2:#ff6a00;--glow:rgba(255,69,0,.15);--amb:#ffb300;--grn:#00e676;--red:#ff1744;--blu:#2979ff;--pur:#aa00ff;--tel:#00bcd4;--txt:#f0f0f5;--txt2:#8888a0;--txtm:#555568;--fd:'Bebas Neue',sans-serif;--fb:'Rajdhani',sans-serif;--fm:'Share Tech Mono',monospace;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--txt);font-family:var(--fb);font-size:15px;min-height:100vh;overflow-x:hidden;}
+.screen{display:none;min-height:100vh;}.screen.on{display:flex;}
+/* LOGIN */
+#sl{align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.lbg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 100%,rgba(255,69,0,.12),transparent 70%);}
+.lgrid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,69,0,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,69,0,.04) 1px,transparent 1px);background-size:40px 40px;}
+.lbox{position:relative;z-index:2;width:100%;max-width:500px;padding:20px;}
+.llogo{text-align:center;margin-bottom:32px;}
+.llogo .fi{font-size:52px;display:block;margin-bottom:8px;filter:drop-shadow(0 0 20px rgba(255,69,0,.8));animation:pf 2s ease-in-out infinite;}
+@keyframes pf{0%,100%{filter:drop-shadow(0 0 20px rgba(255,69,0,.8));transform:scale(1)}50%{filter:drop-shadow(0 0 35px rgba(255,106,0,1));transform:scale(1.05)}}
+.llogo h1{font-family:var(--fd);font-size:48px;letter-spacing:6px;line-height:1;}
+.llogo h1 span{color:var(--fire);}
+.llogo p{font-family:var(--fm);font-size:11px;color:var(--txtm);letter-spacing:4px;margin-top:6px;}
+.lcard{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:30px;position:relative;}
+.lcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--fire),transparent);}
+.trow{display:flex;margin-bottom:22px;border-bottom:1px solid var(--bdr);}
+.tbtn{flex:1;padding:10px;background:none;border:none;color:var(--txtm);font-family:var(--fb);font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;}
+.tbtn.on{color:var(--fire);border-bottom-color:var(--fire);}
+.tp{display:none;}.tp.on{display:block;}
+/* CODE INPUT */
+.code-display{background:var(--bg);border:2px solid var(--fire);border-radius:4px;padding:16px;text-align:center;margin:12px 0;}
+.code-val{font-family:var(--fm);font-size:28px;letter-spacing:8px;color:var(--fire);font-weight:bold;}
+.code-hint{font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:2px;margin-top:6px;}
+.code-input-row{display:flex;gap:8px;}
+.code-input-row input{flex:1;font-family:var(--fm);font-size:18px;letter-spacing:6px;text-align:center;text-transform:uppercase;}
+/* FORMS */
+.fg{margin-bottom:14px;}
+label{display:block;font-family:var(--fm);font-size:11px;color:var(--txtm);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+input,select,textarea{width:100%;background:var(--elev);border:1px solid var(--bdr);border-radius:3px;color:var(--txt);font-family:var(--fb);font-size:15px;padding:10px 14px;transition:border-color .2s;outline:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--fire);box-shadow:0 0 0 3px var(--glow);}
+input[readonly]{opacity:.6;cursor:not-allowed;}
+select option{background:var(--elev);}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 20px;border:none;border-radius:3px;font-family:var(--fb);font-weight:700;font-size:13px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.bp{background:var(--fire);color:#fff;}.bp:hover{background:var(--fire2);box-shadow:0 0 20px rgba(255,69,0,.4);}
+.bfw{width:100%;margin-top:8px;}
+.bs{background:var(--elev);color:var(--txt);border:1px solid var(--bdr);}.bs:hover{border-color:var(--fire);color:var(--fire);}
+.bg{background:none;color:var(--txt2);border:1px solid var(--bdr);}.bg:hover{border-color:var(--bdr2);color:var(--txt);}
+.bd{background:rgba(255,23,68,.15);color:var(--red);border:1px solid rgba(255,23,68,.3);}.bd:hover{background:rgba(255,23,68,.28);}
+.be{background:rgba(41,121,255,.1);color:var(--blu);border:1px solid rgba(41,121,255,.3);}.be:hover{background:rgba(41,121,255,.2);}
+.bgr2{background:rgba(0,230,118,.1);color:var(--grn);border:1px solid rgba(0,230,118,.3);}
+.bsm{padding:6px 12px;font-size:11px;letter-spacing:1px;}.bxs{padding:4px 8px;font-size:10px;letter-spacing:1px;}
+.btn-link{background:none;border:none;color:var(--fire);font-family:var(--fb);font-size:13px;cursor:pointer;text-decoration:underline;padding:0;}
+/* APP LAYOUT */
+#sa{flex-direction:row;}
+.sb{width:240px;min-height:100vh;background:var(--bg2);border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sblogo{padding:18px 18px 12px;border-bottom:1px solid var(--bdr);}
+.sblogo .lm{display:flex;align-items:center;gap:10px;}
+.sblogo .fl{font-size:24px;filter:drop-shadow(0 0 8px rgba(255,69,0,.7));}
+.sblogo h2{font-family:var(--fd);font-size:22px;letter-spacing:3px;line-height:1;}
+.sblogo h2 span{color:var(--fire);}
+.dbd{margin-top:6px;font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;}
+.dbd strong{color:var(--amb);display:block;font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sbnav{flex:1;padding:8px 0;overflow-y:auto;}
+.nsl{font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:2px;text-transform:uppercase;padding:10px 18px 4px;}
+.ni{display:flex;align-items:center;gap:11px;padding:9px 18px;color:var(--txt2);cursor:pointer;transition:all .15s;border-left:3px solid transparent;font-weight:600;font-size:13px;}
+.ni:hover{color:var(--txt);background:rgba(255,255,255,.03);}
+.ni.on{color:var(--fire);border-left-color:var(--fire);background:var(--glow);}
+.ni.locked{opacity:.4;cursor:not-allowed;}
+.nic{font-size:15px;width:18px;text-align:center;}
+.sbu{padding:12px 18px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:10px;cursor:pointer;}
+.sbu:hover{background:rgba(255,255,255,.02);}
+.ua{width:32px;height:32px;border-radius:50%;background:var(--glow);border:2px solid var(--fire);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--fire);font-size:12px;flex-shrink:0;}
+.ui{min-width:0;flex:1;}
+.un{font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ur{font-family:var(--fm);font-size:9px;color:var(--fire);letter-spacing:1px;}
+.blogout{background:none;border:none;color:var(--txtm);cursor:pointer;font-size:14px;padding:4px;flex-shrink:0;}
+.blogout:hover{color:var(--red);}
+/* MAIN */
+.mc{flex:1;min-height:100vh;overflow-y:auto;}
+.pg{display:none;padding:24px 28px;}.pg.on{display:block;}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.pt{font-family:var(--fd);font-size:32px;letter-spacing:3px;line-height:1;}
+.pt span{color:var(--fire);}
+.ps{font-family:var(--fm);font-size:11px;color:var(--txtm);letter-spacing:2px;margin-top:3px;}
+.pa{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.ronly{background:rgba(255,179,0,.08);border:1px solid rgba(255,179,0,.2);border-radius:3px;padding:9px 13px;font-family:var(--fm);font-size:11px;color:var(--amb);letter-spacing:1px;margin-bottom:13px;display:flex;align-items:center;gap:8px;}
+/* STATS */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:11px;margin-bottom:20px;}
+.sc{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:15px;position:relative;overflow:hidden;}
+.sc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.sc.cf::after{background:var(--fire)}.sc.ca::after{background:var(--amb)}.sc.cg::after{background:var(--grn)}.sc.cb::after{background:var(--blu)}.sc.cp::after{background:var(--pur)}.sc.ct::after{background:var(--tel)}
+.sl2{font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;}
+.sv{font-family:var(--fd);font-size:34px;letter-spacing:2px;line-height:1;}
+.sc.cf .sv{color:var(--fire)}.sc.ca .sv{color:var(--amb)}.sc.cg .sv{color:var(--grn)}.sc.cb .sv{color:var(--blu)}.sc.cp .sv{color:var(--pur)}.sc.ct .sv{color:var(--tel)}
+.ss{font-size:12px;color:var(--txtm);margin-top:3px;}
+/* CLOCK */
+.clkbar{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:18px;}
+.clkt{font-family:var(--fd);font-size:46px;letter-spacing:4px;color:var(--fire);line-height:1;}
+.clkd{width:1px;height:42px;background:var(--bdr);}
+.clki{display:flex;flex-direction:column;gap:3px;}
+.clkdate{font-family:var(--fm);font-size:12px;color:var(--txt);letter-spacing:2px;}
+.clkday{font-family:var(--fd);font-size:18px;letter-spacing:2px;color:var(--txt2);}
+/* TWO COL */
+.tc2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+/* TABLE CARD */
+.tcard{background:var(--card);border:1px solid var(--bdr);border-radius:4px;overflow:hidden;margin-bottom:16px;}
+.thead2{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bdr);flex-wrap:wrap;gap:8px;}
+.ttl{font-family:var(--fd);font-size:17px;letter-spacing:2px;}
+table{width:100%;border-collapse:collapse;}
+th{font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:2px;text-transform:uppercase;text-align:left;padding:9px 16px;border-bottom:1px solid var(--bdr);background:var(--bg2);}
+td{padding:9px 16px;border-bottom:1px solid var(--bdr);font-size:13px;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.ac{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:2px;font-family:var(--fm);font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:600;}
+.bf{background:rgba(255,69,0,.15);color:var(--fire);border:1px solid rgba(255,69,0,.3)}
+.ba{background:rgba(255,179,0,.15);color:var(--amb);border:1px solid rgba(255,179,0,.3)}
+.bgn{background:rgba(0,230,118,.1);color:var(--grn);border:1px solid rgba(0,230,118,.25)}
+.br{background:rgba(255,23,68,.1);color:var(--red);border:1px solid rgba(255,23,68,.25)}
+.bb{background:rgba(41,121,255,.1);color:var(--blu);border:1px solid rgba(41,121,255,.25)}
+.bpu{background:rgba(170,0,255,.1);color:var(--pur);border:1px solid rgba(170,0,255,.25)}
+.bt{background:rgba(0,188,212,.1);color:var(--tel);border:1px solid rgba(0,188,212,.25)}
+.bgr{background:rgba(255,255,255,.05);color:var(--txt2);border:1px solid var(--bdr)}
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:2000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.mo.on{display:flex;}
+.md{background:var(--card);border:1px solid var(--bdr);border-radius:4px;width:100%;max-width:660px;max-height:92vh;overflow-y:auto;position:relative;}
+.md.wd{max-width:820px;}
+.md::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--fire),transparent);}
+.mh{display:flex;align-items:center;gap:10px;padding:15px 20px;border-bottom:1px solid var(--bdr);}
+.mt2{font-family:var(--fd);font-size:20px;letter-spacing:2px;flex:1;}
+.mx{background:none;border:none;color:var(--txtm);font-size:19px;cursor:pointer;line-height:1;padding:4px;flex-shrink:0;}
+.mx:hover{color:var(--red);}
+.mb{padding:18px 20px;}
+.mf{display:flex;gap:10px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--bdr);flex-wrap:wrap;align-items:center;}
+.mtag{font-family:var(--fm);font-size:10px;letter-spacing:2px;padding:3px 8px;border-radius:2px;flex-shrink:0;}
+.mtag.edit{background:rgba(41,121,255,.1);color:var(--blu);border:1px solid rgba(41,121,255,.3);}
+.mtag.new{background:rgba(255,69,0,.1);color:var(--fire);border:1px solid rgba(255,69,0,.3);}
+.dl{margin-right:auto;}
+/* MAP */
+#leaflet-map{height:420px;width:100%;z-index:1;}
+.map-wrap{border-radius:0;overflow:hidden;}
+.leaflet-popup-content-wrapper{background:var(--card);border:1px solid var(--bdr);border-left:3px solid var(--fire);border-radius:3px;color:var(--txt);box-shadow:0 8px 24px rgba(0,0,0,.5);}
+.leaflet-popup-tip{background:var(--card);}
+.leaflet-popup-content{margin:10px 14px;font-family:var(--fb);}
+.popup-type{font-family:var(--fm);font-size:10px;letter-spacing:2px;color:var(--fire);margin-bottom:4px;}
+.popup-addr{font-weight:700;font-size:14px;}
+.popup-date{font-size:12px;color:var(--txtm);margin-top:2px;}
+.mapleg{display:flex;gap:14px;padding:10px 16px;border-top:1px solid var(--bdr);background:var(--bg2);flex-wrap:wrap;align-items:center;}
+.legitem{display:flex;align-items:center;gap:6px;font-family:var(--fm);font-size:11px;color:var(--txtm);}
+.legdot{width:10px;height:10px;border-radius:50%;}
+/* ACTIVITY FEED */
+.actfeed{background:var(--card);border:1px solid var(--bdr);border-radius:4px;overflow:hidden;}
+.aitem{display:flex;gap:11px;padding:10px 14px;border-bottom:1px solid var(--bdr);align-items:flex-start;}
+.aitem:last-child{border-bottom:none;}
+.aicon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.af{background:var(--glow)}.ae{background:rgba(41,121,255,.1)}.ag{background:rgba(0,230,118,.1)}
+.atxt{font-size:13px;line-height:1.4;}
+.atim{font-family:var(--fm);font-size:10px;color:var(--txtm);margin-top:2px;}
+/* MINUTES */
+.mcard{background:var(--card);border:1px solid var(--bdr);border-radius:4px;margin-bottom:10px;overflow:hidden;}
+.mcard:hover{border-color:var(--bdr2);}
+.mchdr{display:flex;align-items:center;gap:12px;padding:12px 15px;cursor:pointer;}
+.mctypeicon{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.mcbody{display:none;padding:0 15px 15px;border-top:1px solid var(--bdr);}
+.mcbody.on{display:block;}
+.mctext{font-size:13px;line-height:1.8;color:var(--txt2);white-space:pre-wrap;padding:11px 0;}
+/* EVENTS */
+.ecard{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:13px 15px;margin-bottom:9px;display:flex;align-items:flex-start;gap:11px;}
+.ecard:hover{border-color:var(--bdr2);}
+.edb{background:var(--elev);border:1px solid var(--bdr);border-radius:3px;padding:5px 8px;text-align:center;min-width:50px;flex-shrink:0;}
+.edmo{font-family:var(--fm);font-size:9px;color:var(--fire);letter-spacing:2px;text-transform:uppercase;}
+.edday{font-family:var(--fd);font-size:24px;line-height:1;}
+/* PROFILE HERO */
+.phero{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:24px;margin-bottom:16px;position:relative;}
+.phero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--fire),transparent);}
+.phero-inner{display:flex;gap:20px;align-items:flex-start;}
+.pbigav{width:72px;height:72px;border-radius:50%;background:var(--glow);border:3px solid var(--fire);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:28px;color:var(--fire);flex-shrink:0;overflow:hidden;position:relative;}
+.pbigav img{width:100%;height:100%;object-fit:cover;}
+.pname{font-family:var(--fd);font-size:32px;letter-spacing:2px;}
+.prole{font-family:var(--fm);font-size:12px;color:var(--fire);letter-spacing:2px;margin-top:3px;}
+.pdept{font-size:13px;color:var(--txtm);margin-top:4px;}
+.igrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+.iitem{background:var(--elev);border:1px solid var(--bdr);border-radius:3px;padding:9px 13px;}
+.ilbl{font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:2px;margin-bottom:3px;}
+.ival{font-size:13px;font-weight:600;}
+/* DEPT PROFILE */
+.dhero{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:24px;margin-bottom:16px;position:relative;overflow:hidden;}
+.dhero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--fire),transparent);}
+.dh-inner{display:flex;gap:20px;align-items:flex-start;}
+.dshield{width:80px;height:80px;border-radius:8px;background:var(--glow);border:2px solid var(--fire);display:flex;align-items:center;justify-content:center;font-size:36px;flex-shrink:0;overflow:hidden;position:relative;cursor:pointer;}
+.dshield img{width:100%;height:100%;object-fit:cover;}
+.dshield .cam-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;font-size:20px;}
+.dshield:hover .cam-overlay{display:flex;}
+.dnm{font-family:var(--fd);font-size:30px;letter-spacing:2px;}
+.dsub{font-family:var(--fm);font-size:11px;color:var(--txtm);letter-spacing:2px;margin-top:3px;}
+.dstats{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:9px;margin-top:16px;}
+.dstat{background:var(--elev);border:1px solid var(--bdr);border-radius:3px;padding:9px;text-align:center;}
+.dstatv{font-family:var(--fd);font-size:24px;color:var(--fire);}
+.dstatl{font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:2px;}
+/* PERSONNEL CARDS */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:11px;}
+.pcard{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:14px;display:flex;gap:11px;align-items:flex-start;position:relative;}
+.pcard:hover{border-color:var(--bdr2);}
+.pav{width:42px;height:42px;border-radius:50%;background:var(--glow);border:2px solid var(--fire);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:17px;color:var(--fire);flex-shrink:0;}
+.pac{position:absolute;top:10px;right:10px;}
+/* STATIONS */
+.station-card{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:16px;margin-bottom:10px;position:relative;}
+.station-card:hover{border-color:var(--bdr2);}
+.station-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.station-nm{font-family:var(--fd);font-size:20px;letter-spacing:2px;}
+.station-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;}
+/* MISC */
+.sbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+textarea{resize:vertical;min-height:80px;}
+.minta{min-height:240px;font-family:var(--fm);font-size:13px;line-height:1.8;}
+.fdrop{border:2px dashed var(--bdr);border-radius:4px;padding:16px;text-align:center;cursor:pointer;transition:all .2s;color:var(--txtm);font-family:var(--fm);font-size:12px;letter-spacing:1px;}
+.fdrop:hover{border-color:var(--fire);color:var(--fire);background:var(--glow);}
+.fdrop .ui2{font-size:22px;margin-bottom:4px;}
+.dvr{height:1px;background:var(--bdr);margin:16px 0;}
+/* INLINE INFO */
+.info-box{background:var(--elev);border:1px solid var(--bdr);border-radius:3px;padding:14px;margin-bottom:14px;}
+.info-box.fire-box{border-left:3px solid var(--fire);}
+.info-box.green-box{border-left:3px solid var(--grn);}
+.info-box.amber-box{border-left:3px solid var(--amb);}
+/* TOAST */
+.toastc{position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:7px;}
+.toast{background:var(--elev);border:1px solid var(--bdr);border-left:3px solid var(--fire);border-radius:3px;padding:10px 14px;font-size:13px;min-width:200px;animation:si .3s ease;box-shadow:0 8px 28px rgba(0,0,0,.4);}
+@keyframes si{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.ok{border-left-color:var(--grn)}.toast.err{border-left-color:var(--red)}.toast.warn{border-left-color:var(--amb)}
+/* STEP INDICATOR */
+.steps{display:flex;gap:0;margin-bottom:20px;}
+.step{flex:1;padding:8px 4px;text-align:center;font-family:var(--fm);font-size:10px;letter-spacing:1px;color:var(--txtm);border-bottom:2px solid var(--bdr);position:relative;}
+.step.done{color:var(--grn);border-bottom-color:var(--grn);}
+.step.active{color:var(--fire);border-bottom-color:var(--fire);}
+/* FINANCE LOCK */
+.fin-lock{background:rgba(255,23,68,.07);border:1px solid rgba(255,23,68,.2);border-radius:4px;padding:40px;text-align:center;}
+.fin-lock .li{font-size:48px;margin-bottom:12px;}
+.fin-lock h3{font-family:var(--fd);font-size:24px;letter-spacing:2px;color:var(--red);margin-bottom:8px;}
+.fin-lock p{font-size:13px;color:var(--txt2);line-height:1.6;}
+/* LANGUAGE SCREEN */
+.lang-screen{background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:24px;}
+.lang-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;max-width:700px;width:100%;margin-top:24px;}
+.lang-btn{background:var(--card);border:2px solid var(--bdr);border-radius:6px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;font-family:var(--fb);font-size:14px;font-weight:600;}
+.lang-btn:hover,.lang-btn.sel{border-color:var(--fire);background:var(--glow);color:var(--fire);}
+.lang-flag{font-size:28px;display:block;margin-bottom:6px;}
+.lang-name{display:block;font-size:13px;}
+.lang-native{display:block;font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:2px;}
+/* MAP PLACE PIN MODE */
+.map-toolbar{display:flex;gap:10px;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--bdr);align-items:center;flex-wrap:wrap;}
+.map-toolbar label{font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:2px;white-space:nowrap;}
+#leaflet-map.place-mode{cursor:crosshair!important;}
+#leaflet-map.place-mode .leaflet-container{cursor:crosshair!important;}
+.place-hint{background:rgba(255,69,0,.12);border:1px solid rgba(255,69,0,.3);border-radius:3px;padding:6px 12px;font-family:var(--fm);font-size:11px;color:var(--fire);letter-spacing:1px;animation:pulse2 1.5s ease-in-out infinite;}
+@keyframes pulse2{0%,100%{opacity:1}50%{opacity:.6}}
+/* RESPONSIVE */
+/* ═══ MOBILE BOTTOM NAV ═══ */
+.mob-nav{position:fixed;bottom:0;left:0;right:0;z-index:900;
+  background:var(--bg2);border-top:1px solid var(--bdr);
+  padding-bottom:env(safe-area-inset-bottom);
+  display:none;flex-direction:row;align-items:stretch;}
+.mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:8px 2px;gap:3px;cursor:pointer;
+  color:var(--txt2);font-family:var(--fm);font-size:8px;letter-spacing:.5px;
+  text-transform:uppercase;border:none;background:none;min-height:56px;
+  -webkit-tap-highlight-color:transparent;transition:color .15s;}
+.mob-nav-item .mni{font-size:19px;line-height:1;}
+.mob-nav-item.on{color:var(--fire);}
+.mob-more-sheet{position:fixed;bottom:0;left:0;right:0;z-index:960;
+  background:var(--bg2);border-top:2px solid var(--fire);
+  padding:14px 12px calc(14px + env(safe-area-inset-bottom));
+  display:none;flex-wrap:wrap;gap:8px;max-height:60vh;overflow-y:auto;}
+.mob-more-sheet.on{display:flex;}
+.mob-more-item{flex:1;min-width:calc(33.33% - 8px);display:flex;
+  flex-direction:column;align-items:center;gap:5px;padding:12px 6px;
+  background:var(--card);border:1px solid var(--bdr);border-radius:6px;
+  cursor:pointer;font-family:var(--fm);font-size:9px;color:var(--txt2);
+  letter-spacing:.5px;text-align:center;-webkit-tap-highlight-color:transparent;}
+.mob-more-item .mni{font-size:22px;}
+.mob-more-item.on{color:var(--fire);border-color:var(--fire);}
+.mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:950;}
+.mob-overlay.on{display:block;}
+
+@media(max-width:768px){
+  .sb{display:none!important;}
+  .mob-nav{display:flex;}
+  #sa{flex-direction:column;}
+  .mc{padding-bottom:calc(64px + env(safe-area-inset-bottom));}
+  .pg{padding:12px 12px 16px;}
+  .fr2,.fr3,.tc2{grid-template-columns:1fr!important;}
+  .sgrid{grid-template-columns:1fr 1fr;gap:8px;}
+  .pt{font-size:28px!important;}.ps{font-size:10px!important;}
+  .pa{flex-wrap:wrap;gap:6px;}.pa .btn{font-size:11px;padding:8px 12px;}
+  .sbar{flex-direction:column;gap:8px;}
+  .sbar input,.sbar select{max-width:100%!important;width:100%;}
+  .tcard{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table{min-width:480px;}
+  th,td{padding:8px 10px;font-size:12px;}
+  .sc{padding:12px;}.sv{font-size:22px!important;}
+  .mo{align-items:flex-end!important;padding:0!important;}
+  .md{width:100%!important;max-width:100%!important;max-height:90vh;
+    border-radius:16px 16px 0 0!important;overflow:hidden;
+    display:flex;flex-direction:column;}
+  .mb{padding:14px 16px;overflow-y:auto;flex:1;
+    padding-bottom:env(safe-area-inset-bottom);}
+  .mh{padding:14px 16px 12px;position:sticky;top:0;
+    background:var(--card);z-index:2;border-radius:16px 16px 0 0;}
+  .mf{padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:var(--card);border-top:1px solid var(--bdr);flex-shrink:0;}
+  .btn{min-height:42px;}
+  .bsm{min-height:36px!important;}
+  input,select,textarea{font-size:16px!important;}
+  .map-wrap{height:55vw;min-height:260px;}
+  #leaflet-map{height:100%;}
+  .lbox{padding:14px;}.lcard{padding:18px 14px;}
+  .llogo h1{font-size:36px;}
+  .mchdr{padding:12px;}.mcbody{padding:0 12px 12px;}
+  .station-hdr{flex-wrap:wrap;gap:8px;}
+  .ac{flex-wrap:wrap;gap:4px;}
+  .ph{margin-bottom:12px;gap:8px;}
+  .mcard{margin-bottom:8px;}
+}
+@media(max-width:400px){
+  .sgrid{grid-template-columns:1fr;}
+  .pt{font-size:22px!important;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ LANGUAGE SCREEN ═══════════ -->
+<div id="slang" class="screen on">
+  <div class="lang-screen" style="width:100%">
+    <div style="text-align:center;margin-bottom:8px">
+      <span style="font-size:52px;filter:drop-shadow(0 0 20px rgba(255,69,0,.8))">🔥</span>
+      <h1 style="font-family:var(--fd);font-size:42px;letter-spacing:6px;margin-top:8px">FIRE<span style="color:var(--fire)">COMMAND</span></h1>
+      <p style="font-family:var(--fm);font-size:11px;color:var(--txtm);letter-spacing:4px;margin-top:6px">SELECT YOUR LANGUAGE · SELECCIONE SU IDIOMA</p>
+    </div>
+    <div class="lang-grid">
+      <div class="lang-btn sel" onclick="setLang('en',this)"><span class="lang-flag">🇺🇸</span><span class="lang-name">English</span><span class="lang-native">English</span></div>
+      <div class="lang-btn" onclick="setLang('es',this)"><span class="lang-flag">🇪🇸</span><span class="lang-name">Spanish</span><span class="lang-native">Español</span></div>
+      <div class="lang-btn" onclick="setLang('fr',this)"><span class="lang-flag">🇫🇷</span><span class="lang-name">French</span><span class="lang-native">Français</span></div>
+      <div class="lang-btn" onclick="setLang('de',this)"><span class="lang-flag">🇩🇪</span><span class="lang-name">German</span><span class="lang-native">Deutsch</span></div>
+      <div class="lang-btn" onclick="setLang('pt',this)"><span class="lang-flag">🇧🇷</span><span class="lang-name">Portuguese</span><span class="lang-native">Português</span></div>
+      <div class="lang-btn" onclick="setLang('it',this)"><span class="lang-flag">🇮🇹</span><span class="lang-name">Italian</span><span class="lang-native">Italiano</span></div>
+      <div class="lang-btn" onclick="setLang('zh',this)"><span class="lang-flag">🇨🇳</span><span class="lang-name">Chinese</span><span class="lang-native">中文</span></div>
+      <div class="lang-btn" onclick="setLang('ja',this)"><span class="lang-flag">🇯🇵</span><span class="lang-name">Japanese</span><span class="lang-native">日本語</span></div>
+      <div class="lang-btn" onclick="setLang('ko',this)"><span class="lang-flag">🇰🇷</span><span class="lang-name">Korean</span><span class="lang-native">한국어</span></div>
+      <div class="lang-btn" onclick="setLang('ar',this)"><span class="lang-flag">🇸🇦</span><span class="lang-name">Arabic</span><span class="lang-native">العربية</span></div>
+      <div class="lang-btn" onclick="setLang('tl',this)"><span class="lang-flag">🇵🇭</span><span class="lang-name">Filipino</span><span class="lang-native">Filipino</span></div>
+      <div class="lang-btn" onclick="setLang('vi',this)"><span class="lang-flag">🇻🇳</span><span class="lang-name">Vietnamese</span><span class="lang-native">Tiếng Việt</span></div>
+    </div>
+    <button class="btn bp" style="margin-top:28px;padding:14px 48px;font-size:15px;letter-spacing:3px" onclick="confirmLang()">CONTINUE →</button>
+    <p style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:16px">Selected language will apply throughout your experience</p>
+  </div>
+</div>
+
+<!-- ═══════════ LOGIN SCREEN ═══════════ -->
+<div id="sl" class="screen">
+  <div class="lbg"></div><div class="lgrid"></div>
+  <div class="lbox">
+    <div class="llogo">
+      <span class="fi">🔥</span><h1>FIRE <span>COMMAND</span></h1>
+      <p>Secure Department Management System</p>
+    </div>
+    <div class="lcard">
+      <div class="trow">
+        <button class="tbtn on" onclick="switchTab('in',this)">Sign In</button>
+        <button class="tbtn" onclick="switchTab('up',this)">Register</button>
+      </div>
+
+      <!-- SIGN IN -->
+      <div id="tp-in" class="tp on">
+        <div class="fg"><label>Email Address</label><input type="email" id="le" placeholder="you@department.gov" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <div class="fg"><label>Password</label><input type="password" id="lp" placeholder="Your password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="btn bp bfw" onclick="doLogin()">🔐 Sign In</button>
+        <div style="text-align:center;margin-top:10px;font-size:12px;color:var(--txtm)">Demo logins: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="294a41404c4f694f4d074e465f">[email&#160;protected]</a> · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="88ebe9f8fce9e1e6c8eeeca6efe7fe">[email&#160;protected]</a> · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0264644264662c656d74">[email&#160;protected]</a> &nbsp;|&nbsp; any password</div>
+      </div>
+
+      <!-- REGISTER — MULTI-STEP -->
+      <div id="tp-up" class="tp">
+        <div class="steps">
+          <div class="step active" id="step1-ind">1 · ACCOUNT</div>
+          <div class="step" id="step2-ind">2 · DEPARTMENT</div>
+          <div class="step" id="step3-ind">3 · ACCESS</div>
+        </div>
+
+        <!-- Step 1: Basic Info -->
+        <div id="reg-step1">
+          <div class="fr2">
+            <div class="fg"><label>First Name</label><input id="suf" placeholder="John"></div>
+            <div class="fg"><label>Last Name</label><input id="sul" placeholder="Smith"></div>
+          </div>
+          <div class="fg"><label>Email Address</label><input type="email" id="sue" placeholder="you@dept.gov"></div>
+          <div class="fg"><label>Create Password</label><input type="password" id="supw" placeholder="Min 6 characters"></div>
+          <div class="fg"><label>Your Position / Role</label>
+            <select id="sup">
+              <option value="">Select your role...</option>
+              <option>Chief</option><option>Asst. Chief</option><option>Secretary</option><option>Treasurer</option><option>Captain</option><option>Firefighter</option><option>Other</option>
+            </select>
+          </div>
+          <button class="btn bp bfw" onclick="regStep1()">Continue →</button>
+        </div>
+
+        <!-- Step 2: Department -->
+        <div id="reg-step2" style="display:none">
+          <div class="fg" style="margin-bottom:8px"><label>I am...</label>
+            <div style="display:flex;gap:10px;margin-top:6px">
+              <button class="btn bs" style="flex:1;font-size:12px" id="btn-new-dept" onclick="setDeptMode('new')">🏛️ Creating New Department</button>
+              <button class="btn bs" style="flex:1;font-size:12px" id="btn-join-dept" onclick="setDeptMode('join')">🔑 Joining Existing Dept</button>
+            </div>
+          </div>
+          <!-- CREATE NEW DEPT -->
+          <div id="new-dept-form" style="display:none">
+            <div class="info-box amber-box" style="margin-bottom:12px;font-family:var(--fm);font-size:11px;color:var(--amb)">
+              ⭐ As department founder, you will have full admin access. No join code required.
+            </div>
+            <div class="fg"><label>Department Name</label><input id="dept-name" placeholder="Riverside Fire Department"></div>
+            <div class="fr2">
+              <div class="fg"><label>FDID Number</label><input id="dept-fdid" placeholder="RFD-0042"></div>
+              <div class="fg"><label>Year Established</label><input id="dept-est" placeholder="1952" type="number"></div>
+            </div>
+            <div class="fg"><label>Department Type</label>
+              <select id="dept-type"><option>Career (Paid)</option><option>Volunteer</option><option selected>Combination (Career + Volunteer)</option><option>Industrial</option></select>
+            </div>
+            <div class="fg"><label>Main Station Address</label><input id="dept-addr" placeholder="123 Fire Station Rd, City, State ZIP"></div>
+            <div class="fr2">
+              <div class="fg"><label>Phone</label><input id="dept-ph" placeholder="(555) 200-0001"></div>
+              <div class="fg"><label>Email</label><input id="dept-em" placeholder="info@dept.gov"></div>
+            </div>
+            <button class="btn bp bfw" onclick="regCreateDept()">Create Department & Continue →</button>
+          </div>
+          <!-- JOIN EXISTING DEPT -->
+          <div id="join-dept-form" style="display:none">
+            <div class="info-box fire-box" style="margin-bottom:12px;font-family:var(--fm);font-size:11px;color:var(--txt2);line-height:1.6">
+              🔑 Enter the <strong style="color:var(--fire)">join code</strong> provided by your department admin. This verifies you are authorized to access your department's secure data.
+            </div>
+            <div class="fg"><label>Department Join Code</label>
+              <div class="code-input-row">
+                <input id="join-code" placeholder="ABC-123" style="font-size:20px;letter-spacing:6px;text-align:center;text-transform:uppercase" maxlength="7" oninput="this.value=this.value.toUpperCase()">
+                <button class="btn bp" onclick="regJoinDept()" style="flex-shrink:0">Verify</button>
+              </div>
+            </div>
+            <div id="join-dept-preview" style="display:none">
+              <div class="info-box green-box">
+                <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:2px">DEPARTMENT FOUND</div>
+                <div style="font-weight:700;font-size:15px;margin-top:4px" id="join-dept-name">—</div>
+                <div style="font-size:12px;color:var(--txtm);margin-top:2px" id="join-dept-meta">—</div>
+              </div>
+              <button class="btn bp bfw" onclick="regStep3()">Join This Department →</button>
+            </div>
+          </div>
+          <div style="margin-top:10px;text-align:center"><button class="btn-link" onclick="backToStep1()">← Back</button></div>
+        </div>
+
+        <!-- Step 3: Confirm & Access -->
+        <div id="reg-step3" style="display:none">
+          <div class="info-box green-box" style="margin-bottom:14px">
+            <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:2px">REGISTRATION SUMMARY</div>
+            <div style="font-weight:700;font-size:16px;margin-top:6px" id="reg-name-preview">—</div>
+            <div style="font-family:var(--fm);font-size:11px;color:var(--txtm);margin-top:3px" id="reg-role-preview">—</div>
+            <div style="font-size:13px;color:var(--txt2);margin-top:3px" id="reg-dept-preview">—</div>
+          </div>
+          <button class="btn bp bfw" onclick="finalRegister()">🚒 Complete Registration & Enter</button>
+          <div style="margin-top:10px;text-align:center"><button class="btn-link" onclick="backToStep2()">← Back</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ APP SCREEN ═══════════ -->
+<div id="sa" class="screen">
+  <nav class="sb">
+    <div class="sblogo">
+      <div class="lm"><span class="fl">🔥</span><h2>FIRE<span>CMD</span></h2></div>
+      <div class="dbd">DEPARTMENT<strong id="sbdept">—</strong></div>
+    </div>
+    <div class="sbnav">
+      <div class="nsl">Main</div>
+      <div class="ni on" onclick="go('dash',this)"><span class="nic">📊</span><span>Dashboard</span></div>
+      <div class="ni" onclick="go('inc',this)"><span class="nic">🔥</span><span>Incidents</span></div>
+      <div class="ni" onclick="go('map',this)" id="nav-map"><span class="nic">🗺️</span><span>Fire Map</span></div>
+      <div class="ni" onclick="go('drone',this)"><span class="nic">🚁</span><span>Drone Reports</span></div>
+      <div class="nsl">Department</div>
+      <div class="ni" onclick="go('deptpro',this)"><span class="nic">🏛️</span><span>Dept. Profile</span></div>
+      <div class="ni" onclick="go('minutes',this)"><span class="nic">📋</span><span>Meeting Minutes</span></div>
+      <div class="ni" onclick="go('events',this)"><span class="nic">📅</span><span>Upcoming Events</span></div>
+      <div class="nsl">Resources</div>
+      <div class="ni" onclick="go('equip',this)"><span class="nic">🚒</span><span>Equipment</span></div>
+      <div class="ni" onclick="go('maint',this)"><span class="nic">🔧</span><span>Maintenance</span></div>
+      <div class="ni" onclick="go('pers',this)"><span class="nic">👥</span><span>Personnel</span></div>
+      <div class="nsl">Settings</div>
+      <div class="ni" onclick="go('userpro',null)" id="nav-userpro2" style="display:none"><span class="nic">👤</span><span>My Profile</span></div>
+      <div class="ni" id="nav-fin" onclick="go('fin',this)"><span class="nic">💰</span><span>Finance</span></div>
+      <div class="ni" onclick="go('fr',this)"><span class="nic">🎟️</span><span>Fundraisers</span></div>
+      <div class="ni" onclick="go('gr',this)"><span class="nic">📝</span><span>Grants</span></div>
+    </div>
+    <div class="sbu" onclick="go('userpro',null)" title="My Profile">
+      <div class="ua" id="sbav">—</div>
+      <div class="ui"><div class="un" id="sbnm">—</div><div class="ur" id="sbrole">—</div></div>
+      <button class="blogout" onclick="event.stopPropagation();doLogout()" title="Logout">⏻</button>
+    </div>
+  </nav>
+
+  <!-- ═══ MOBILE BOTTOM NAV ═══ -->
+  <div class="mob-overlay" id="mob-overlay" onclick="closeMobMore()"></div>
+  <div class="mob-nav" id="mob-nav">
+    <button class="mob-nav-item on" id="mni-dash" onclick="mobGo('dash','mni-dash')">
+      <span class="mni">📊</span><span>Dashboard</span></button>
+    <button class="mob-nav-item" id="mni-inc" onclick="mobGo('inc','mni-inc')">
+      <span class="mni">🔥</span><span>Incidents</span></button>
+    <button class="mob-nav-item" id="mni-map" onclick="mobGo('map','mni-map')">
+      <span class="mni">🗺️</span><span>Map</span></button>
+    <button class="mob-nav-item" id="mni-minutes" onclick="mobGo('minutes','mni-minutes')">
+      <span class="mni">📋</span><span>Minutes</span></button>
+    <button class="mob-nav-item" id="mni-more" onclick="toggleMobMore()">
+      <span class="mni">☰</span><span>More</span></button>
+  </div>
+  <!-- More sheet -->
+  <div class="mob-more-sheet" id="mob-more-sheet">
+    <div class="mob-more-item" id="mni-drone" onclick="mobGo('drone','mni-drone')">
+      <span class="mni">🚁</span><span>Drone</span></div>
+    <div class="mob-more-item" id="mni-deptpro" onclick="mobGo('deptpro','mni-deptpro')">
+      <span class="mni">🏛️</span><span>Dept Profile</span></div>
+    <div class="mob-more-item" id="mni-events" onclick="mobGo('events','mni-events')">
+      <span class="mni">📅</span><span>Events</span></div>
+    <div class="mob-more-item" id="mni-equip" onclick="mobGo('equip','mni-equip')">
+      <span class="mni">🚒</span><span>Equipment</span></div>
+    <div class="mob-more-item" id="mni-maint" onclick="mobGo('maint','mni-maint')">
+      <span class="mni">🔧</span><span>Maintenance</span></div>
+    <div class="mob-more-item" id="mni-pers" onclick="mobGo('pers','mni-pers')">
+      <span class="mni">👥</span><span>Personnel</span></div>
+    <div class="mob-more-item" id="mni-fin" onclick="mobGo('fin','mni-fin')">
+      <span class="mni">💰</span><span>Finance</span></div>
+    <div class="mob-more-item" id="mni-fr" onclick="mobGo('fr','mni-fr')">
+      <span class="mni">🎟️</span><span>Fundraisers</span></div>
+    <div class="mob-more-item" id="mni-gr" onclick="mobGo('gr','mni-gr')">
+      <span class="mni">📝</span><span>Grants</span></div>
+    <div class="mob-more-item" id="mni-userpro" onclick="mobGo('userpro','mni-userpro')">
+      <span class="mni">👤</span><span>My Profile</span></div>
+    <div class="mob-more-item" style="border-color:var(--red);color:var(--red)" onclick="doLogout()">
+      <span class="mni">⏻</span><span>Sign Out</span></div>
+  </div>
+
+  <main class="mc">
+
+    <!-- DASHBOARD -->
+    <div id="pg-dash" class="pg on">
+      <div class="ph"><div><div class="pt">DASH<span>BOARD</span></div><div class="ps" id="datesub"></div></div></div>
+      <div class="clkbar"><div class="clkt" id="clk">00:00:00</div><div class="clkd"></div><div class="clki"><div class="clkdate" id="clkdate">—</div><div class="clkday" id="clkday">—</div></div></div>
+      <div class="sgrid">
+        <div class="sc cf"><div class="sl2">Incidents YTD</div><div class="sv" id="dash-inc">0</div><div class="ss">Filed reports</div></div>
+        <div class="sc ca"><div class="sl2">Equipment</div><div class="sv" id="dash-eq">0</div><div class="ss">Items tracked</div></div>
+        <div class="sc cg"><div class="sl2">Members</div><div class="sv" id="dash-mbr">0</div><div class="ss">Active personnel</div></div>
+        <div class="sc cb"><div class="sl2">Active Grants</div><div class="sv" id="dash-gr">0</div><div class="ss">In progress</div></div>
+        <div class="sc cp"><div class="sl2">Minutes on File</div><div class="sv" id="stat-min">0</div><div class="ss">Meetings recorded</div></div>
+        <div class="sc ct"><div class="sl2">Drone Reports</div><div class="sv" id="stat-drone">0</div><div class="ss">YTD flights</div></div>
+      </div>
+      <div class="tc2">
+        <div class="actfeed"><div class="thead2"><div class="ttl">RECENT ACTIVITY</div></div><div id="dash-activity"></div></div>
+        <div>
+          <div class="tcard" style="margin-bottom:12px"><div class="thead2"><div class="ttl">UPCOMING EVENTS</div><button class="btn bg bsm" onclick="go('events',null)">View All</button></div><div id="dash-evts"></div></div>
+          <div class="tcard"><div class="thead2"><div class="ttl">MAINTENANCE ALERTS</div></div><div id="dash-maint-alerts"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INCIDENTS -->
+    <div id="pg-inc" class="pg">
+      <div class="ph"><div><div class="pt">INCI<span>DENTS</span></div><div class="ps">INCIDENT REPORTS & RECORDS</div></div><div class="pa" id="inc-act"></div></div>
+      <div id="inc-note" class="ronly" style="display:none">🔒 Read-only — contact an admin to make changes</div>
+      <div class="sbar"><input id="inc-srch" placeholder="Search incidents..." style="max-width:240px" oninput="rInc()"><select id="inc-flt" style="max-width:150px" onchange="rInc()"><option value="">All Types</option><option>Structure Fire</option><option>Vehicle Fire</option><option>Medical</option><option>Hazmat</option><option>Wildland Fire</option><option>Rescue</option><option>Other</option></select></div>
+      <div id="inc-list"></div>
+    </div>
+
+    <!-- MAP — Real Leaflet -->
+    <div id="pg-map" class="pg">
+      <div class="ph"><div><div class="pt">FIRE <span>MAP</span></div><div class="ps">LIVE INCIDENT LOCATION MAP</div></div>
+        <div class="pa">
+          <div id="map-admin-tools" style="display:none;gap:8px">
+            <button class="btn bs bsm" onclick="startPlaceMode()">📍 Place Station Pin</button>
+            <button class="btn bs bsm" onclick="regeocodeAll()">🔄 Re-pin All Addresses</button>
+          </div>
+          <select id="map-flt-type" style="padding:7px 12px;font-size:13px;background:var(--elev);border:1px solid var(--bdr);color:var(--txt);border-radius:3px" onchange="refreshMap()"><option value="">All Types</option><option>Structure Fire</option><option>Vehicle Fire</option><option>Medical</option><option>Wildland Fire</option><option>Hazmat</option><option>Rescue</option><option>Other</option></select>
+        </div>
+      </div>
+      <div class="tcard">
+        <div id="map-toolbar" class="map-toolbar" style="display:none">
+          <span class="place-hint" id="place-hint-text">📍 Click anywhere on the map to place the station pin</span>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <select id="place-station-select" style="padding:6px 10px;background:var(--elev);border:1px solid var(--bdr);color:var(--txt);border-radius:3px;font-size:12px"></select>
+            <button class="btn bd bsm" onclick="cancelPlaceMode()">✕ Cancel</button>
+          </div>
+        </div>
+        <div class="map-wrap"><div id="leaflet-map"></div></div>
+        <div class="mapleg">
+          <div class="legitem"><div class="legdot" style="background:#ff4500"></div>Structure Fire</div>
+          <div class="legitem"><div class="legdot" style="background:#ffb300"></div>Vehicle Fire</div>
+          <div class="legitem"><div class="legdot" style="background:#2979ff"></div>Medical</div>
+          <div class="legitem"><div class="legdot" style="background:#00e676"></div>Station</div>
+          <div class="legitem"><div class="legdot" style="background:#00bcd4"></div>Drone Recon</div>
+          <div class="legitem"><div class="legdot" style="background:#aa00ff"></div>Wildland / Hazmat</div>
+          <div class="legitem" style="margin-left:auto;font-size:11px;color:var(--txtm)">📍 Click pins for details</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRONE -->
+    <div id="pg-drone" class="pg">
+      <div class="ph"><div><div class="pt">DRONE <span>REPORTS</span></div><div class="ps">UAV FLIGHT LOGS & RECONNAISSANCE</div></div><div class="pa" id="drone-act"></div></div>
+      <div id="drone-note" class="ronly" style="display:none">🔒 Read-only — contact admin to file drone reports</div>
+      <div class="sbar"><input id="drone-srch" placeholder="Search drone reports..." style="max-width:240px" oninput="rDrone()"><select id="drone-flt" style="max-width:160px" onchange="rDrone()"><option value="">All Missions</option><option>Incident Recon</option><option>Wildland Survey</option><option>Search &amp; Rescue</option><option>Training Flight</option><option>Damage Assessment</option><option>Routine Inspection</option><option>Other</option></select></div>
+      <div class="sgrid">
+        <div class="sc ct"><div class="sl2">Total Flights YTD</div><div class="sv" id="dstat-fl">0</div><div class="ss">Logged missions</div></div>
+        <div class="sc cb"><div class="sl2">Flight Hours YTD</div><div class="sv" id="dstat-hr">0.0</div><div class="ss">Total airtime</div></div>
+        <div class="sc cg"><div class="sl2">Drones in Fleet</div><div class="sv" id="dstat-fleet">0</div><div class="ss">Drone equipment</div></div>
+      </div>
+      <div id="drone-list"></div>
+    </div>
+
+    <!-- DEPT PROFILE -->
+    <div id="pg-deptpro" class="pg">
+      <div class="ph"><div><div class="pt">DEPT <span>PROFILE</span></div><div class="ps">DEPARTMENT INFORMATION & OVERVIEW</div></div>
+        <div class="pa" id="deptpro-act"></div>
+      </div>
+      <div class="dhero">
+        <div class="dh-inner">
+          <div class="dshield" id="dept-shield-wrap" onclick="triggerDeptPhoto()" title="Click to upload department photo">
+            <span id="dept-shield-icon">🔥</span>
+            <img id="dept-photo" style="display:none">
+            <div class="cam-overlay">📷</div>
+          </div>
+          <input type="file" id="dept-photo-input" style="display:none" accept="image/*" onchange="handleDeptPhoto(event)">
+          <div style="flex:1">
+            <div class="dnm" id="dp-name">—</div>
+            <div class="dsub" id="dp-sub">—</div>
+            <div style="font-size:13px;color:var(--txt2);margin-top:8px;max-width:580px;line-height:1.6" id="dp-desc">—</div>
+          </div>
+        </div>
+        <div class="dstats">
+          <div class="dstat"><div class="dstatv" id="dp-inc-cnt">0</div><div class="dstatl">Incidents YTD</div></div>
+          <div class="dstat"><div class="dstatv" id="dp-mbrs">0</div><div class="dstatl">Active Members</div></div>
+          <div class="dstat"><div class="dstatv" id="dp-st-cnt">0</div><div class="dstatl">Stations</div></div>
+          <div class="dstat"><div class="dstatv" id="dp-eq-cnt">0</div><div class="dstatl">Apparatus</div></div>
+        </div>
+      </div>
+      <div class="tc2">
+        <div class="tcard">
+          <div class="thead2"><div class="ttl">CONTACT & LOCATION</div></div>
+          <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
+            <div class="iitem"><div class="ilbl">Department Name</div><div class="ival" id="dp-fullname">—</div></div>
+            <div class="iitem"><div class="ilbl">Chief</div><div class="ival" id="dp-chief">—</div></div>
+            <div class="iitem"><div class="ilbl">Main Address</div><div class="ival" id="dp-addr">—</div></div>
+            <div class="iitem"><div class="ilbl">Non-Emergency Phone</div><div class="ival" id="dp-phone">—</div></div>
+            <div class="iitem"><div class="ilbl">Email</div><div class="ival" id="dp-email">—</div></div>
+            <div class="iitem"><div class="ilbl">Website</div><div class="ival" id="dp-web">—</div></div>
+          </div>
+        </div>
+        <div class="tcard">
+          <div class="thead2"><div class="ttl">DEPARTMENT DETAILS</div></div>
+          <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
+            <div class="iitem"><div class="ilbl">FDID Number</div><div class="ival" id="dp-fdid">—</div></div>
+            <div class="iitem"><div class="ilbl">Year Established</div><div class="ival" id="dp-est">—</div></div>
+            <div class="iitem"><div class="ilbl">Department Type</div><div class="ival" id="dp-type">—</div></div>
+            <div class="iitem"><div class="ilbl">Service Area</div><div class="ival" id="dp-area">—</div></div>
+            <div class="iitem"><div class="ilbl">ISO Rating</div><div class="ival" id="dp-iso">—</div></div>
+            <div class="iitem"><div class="ilbl">County / District</div><div class="ival" id="dp-county">—</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- STATIONS — EDITABLE -->
+      <div class="tcard">
+        <div class="thead2"><div class="ttl">STATIONS</div><div class="pa" id="station-act"></div></div>
+        <div id="station-list" style="padding:14px;display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+      <!-- JOIN CODES (admin only) -->
+      <div id="joincode-section" style="display:none">
+        <div class="tcard">
+          <div class="thead2">
+            <div class="ttl">MEMBER JOIN CODES</div>
+            <button class="btn bp bsm" onclick="genCode()">🔑 Generate New Code</button>
+          </div>
+          <div style="padding:14px">
+            <div class="info-box amber-box" style="margin-bottom:12px;font-size:12px;color:var(--txt2)">
+              Share these codes with new members during signup. Each code can only be used once and expires in 7 days. Codes are invalidated after use.
+            </div>
+            <div id="codes-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- USER PROFILE -->
+    <div id="pg-userpro" class="pg">
+      <div class="ph"><div><div class="pt">MY <span>PROFILE</span></div><div class="ps">PERSONAL ACCOUNT SETTINGS</div></div></div>
+      <div class="phero">
+        <div class="phero-inner">
+          <div style="position:relative">
+            <div class="pbigav" id="pav-big">—</div>
+            <input type="file" id="user-photo-input" style="display:none" accept="image/*" onchange="handleUserPhoto(event)">
+            <button class="btn bsm" style="margin-top:6px;width:72px;font-size:10px;padding:4px 8px" onclick="G('user-photo-input').click()">📷 Photo</button>
+          </div>
+          <div style="flex:1">
+            <div class="pname" id="pnm-disp">—</div>
+            <div class="prole" id="prole-disp">—</div>
+            <div class="pdept" id="pdept-disp">—</div>
+            <div class="igrid">
+              <div class="iitem"><div class="ilbl">Email</div><div class="ival" id="pemail-disp">—</div></div>
+              <div class="iitem"><div class="ilbl">Phone</div><div class="ival" id="pphone-disp">—</div></div>
+              <div class="iitem"><div class="ilbl">Badge #</div><div class="ival" id="pbadge-disp">—</div></div>
+              <div class="iitem"><div class="ilbl">Years of Service</div><div class="ival" id="pyrs-disp">—</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tcard">
+        <div class="thead2"><div class="ttl">MY INFORMATION</div><button class="btn bs bsm" onclick="toggleProfileEdit()" id="prof-edit-btn">✏ Edit My Info</button></div>
+        <div id="prof-edit-form" style="display:none">
+        <div class="mb">
+          <div class="fr2"><div class="fg"><label>First Name</label><input id="pf" placeholder="First"></div><div class="fg"><label>Last Name</label><input id="pl" placeholder="Last"></div></div>
+          <div class="fr2"><div class="fg"><label>Email</label><input type="email" id="pem"></div><div class="fg"><label>Phone</label><input type="tel" id="pph" placeholder="(555) 000-0000"></div></div>
+          <div class="fr2"><div class="fg"><label>Badge / Unit Number</label><input id="pbdg" placeholder="e.g. 042"></div><div class="fg"><label>Years of Service</label><input type="number" id="pyrs" placeholder="e.g. 12" min="0"></div></div>
+          <div class="fg"><label>Address</label><input id="paddr" placeholder="123 Main St, City, State ZIP"></div>
+          <div class="fr2"><div class="fg"><label>Emergency Contact Name</label><input id="pecn" placeholder="Name"></div><div class="fg"><label>Emergency Contact Phone</label><input id="pecp" placeholder="(555) 000-0000"></div></div>
+          <div class="fg">
+            <label>Position / Role <span style="color:var(--txtm);font-size:10px">(Full access only)</span></label>
+            <select id="ppos" disabled style="opacity:.5;cursor:not-allowed"><option>Chief</option><option>Asst. Chief</option><option>Secretary</option><option>Treasurer</option><option>Captain</option><option>Firefighter</option><option>Other</option></select>
+          </div>
+          <div id="prolenote" style="display:none" class="info-box amber-box">⭐ As full access, you may change your own role — this affects your access level.</div>
+          <div class="dvr"></div>
+          <div class="fg"><label>Change Password</label><input type="password" id="ppw" placeholder="Leave blank to keep current password"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn bg" onclick="toggleProfileEdit()">Cancel</button><button class="btn bp" onclick="saveProfile()">💾 Save Changes</button></div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MINUTES -->
+    <div id="pg-minutes" class="pg">
+      <div class="ph"><div><div class="pt">MEETING <span>MINUTES</span></div><div class="ps">BUSINESS · TRAINING · OTHER</div></div><div class="pa" id="min-act"></div></div>
+      <div id="min-note" class="ronly" style="display:none">🔒 Read-only — contact Secretary or admin to add minutes</div>
+      <div class="sbar"><input id="min-srch" placeholder="Search minutes..." style="max-width:240px" oninput="rMin()"><select id="min-flt" style="max-width:150px" onchange="rMin()"><option value="">All Types</option><option value="Business">Business</option><option value="Training">Training</option><option value="Other">Other</option></select></div>
+      <div id="min-list"></div>
+    </div>
+
+    <!-- EVENTS -->
+    <div id="pg-events" class="pg">
+      <div class="ph"><div><div class="pt">UPCOMING <span>EVENTS</span></div><div class="ps">DEPARTMENT CALENDAR</div></div><div class="pa" id="evt-act"></div></div>
+      <div id="evt-note" class="ronly" style="display:none">🔒 Read-only — contact admin to manage events</div>
+      <div class="sbar"><input id="evt-srch" placeholder="Search events..." style="max-width:240px" oninput="rEvt()"><select id="evt-flt" style="max-width:150px" onchange="rEvt()"><option value="">All</option><option value="Meeting">Meeting</option><option value="Training">Training</option><option value="Fundraiser">Fundraiser</option><option value="Community">Community</option><option value="Other">Other</option></select></div>
+      <div id="evt-list"></div>
+    </div>
+
+    <!-- EQUIPMENT -->
+    <div id="pg-equip" class="pg">
+      <div class="ph"><div><div class="pt">EQUIP<span>MENT</span></div><div class="ps">APPARATUS & GEAR INVENTORY</div></div><div class="pa" id="equip-act"></div></div>
+      <div id="equip-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
+      <div class="tcard"><table><thead><tr><th>Item</th><th>Type</th><th>Year/Serial</th><th>Condition</th><th>Assigned</th><th>Next Service</th><th>Actions</th></tr></thead><tbody id="equip-tb"></tbody></table></div>
+    </div>
+
+    <!-- MAINTENANCE -->
+    <div id="pg-maint" class="pg">
+      <div class="ph"><div><div class="pt">MAIN<span>TENANCE</span></div><div class="ps">SERVICE & REPAIR RECORDS</div></div><div class="pa" id="maint-act"></div></div>
+      <div id="maint-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
+      <div class="tcard"><table><thead><tr><th>Equipment</th><th>Type</th><th>Date</th><th>Performed By</th><th>Cost</th><th>Next Due</th><th>Actions</th></tr></thead><tbody id="maint-tb"></tbody></table></div>
+    </div>
+
+    <!-- PERSONNEL -->
+    <div id="pg-pers" class="pg">
+      <div class="ph"><div><div class="pt">PERSON<span>NEL</span></div><div class="ps">DEPARTMENT ROSTER</div></div><div class="pa" id="pers-act"></div></div>
+      <div id="pers-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
+      <div class="pgrid" id="pers-grid"></div>
+    </div>
+
+    <!-- FINANCE — admin only -->
+    <div id="pg-fin" class="pg">
+      <div class="ph"><div><div class="pt">FIN<span>ANCE</span></div><div class="ps">FINANCIAL RECORDS · FY 2026</div></div><div class="pa" id="fin-act"></div></div>
+      <div id="fin-locked" class="fin-lock" style="display:none">
+        <div class="li">🔒</div>
+        <h3>ACCESS RESTRICTED</h3>
+        <p>Full financial records are only available to admin-level personnel:<br><strong>Chief, Asst. Chief, Secretary, Treasurer</strong></p>
+        <p style="margin-top:10px;color:var(--txtm)">You may view Fundraisers and Grants from the sidebar.</p>
+      </div>
+      <div id="fin-content" style="display:none">
+        <div id="fin-note" class="ronly" style="display:none">🔒 Read-only — contact Secretary or Treasurer</div>
+        <div class="sgrid">
+          <div class="sc cg"><div class="sl2">Total Income</div><div class="sv" id="fin-tot-in">$0</div><div class="ss">Grants, donations, fundraisers</div></div>
+          <div class="sc cf"><div class="sl2">Total Expenses</div><div class="sv" id="fin-tot-ex">$0</div><div class="ss">Equipment, payroll, utilities</div></div>
+          <div class="sc ca"><div class="sl2">Net Balance</div><div class="sv" id="fin-net">$0</div><div class="ss">YTD surplus/deficit</div></div>
+        </div>
+        <div class="tcard"><div class="thead2"><div class="ttl">TRANSACTIONS</div></div><table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th>Amount</th><th>Actions</th></tr></thead><tbody id="fin-tb"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- FUNDRAISERS — visible to all -->
+    <div id="pg-fr" class="pg">
+      <div class="ph"><div><div class="pt">FUND<span>RAISERS</span></div><div class="ps">CAMPAIGNS & EVENTS</div></div><div class="pa" id="fr-act"></div></div>
+      <div id="fr-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
+      <div class="tcard"><table><thead><tr><th>Event</th><th>Type</th><th>Date</th><th>Goal</th><th>Raised</th><th>Net</th><th>Status</th><th>Actions</th></tr></thead><tbody id="fr-tb"></tbody></table></div>
+    </div>
+
+    <!-- GRANTS — visible to all -->
+    <div id="pg-gr" class="pg">
+      <div class="ph"><div><div class="pt">GRANT<span>S</span></div><div class="ps">APPLICATIONS & AWARDS TRACKER</div></div><div class="pa" id="gr-act"></div></div>
+      <div id="gr-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
+      <div class="tcard"><table><thead><tr><th>Grant Name</th><th>Organization</th><th>Requested</th><th>Awarded</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead><tbody id="gr-tb"></tbody></table></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══ MODALS ═══ -->
+<!-- INCIDENT -->
+<div id="mo-inc" class="mo"><div class="md">
+  <div class="mh"><div class="mt2" id="inc-mtitle">FILE INCIDENT REPORT</div><span class="mtag new" id="inc-mtag">NEW</span><button class="mx" onclick="CM('mo-inc')">✕</button></div>
+  <div class="mb"><input type="hidden" id="inc-id">
+    <div class="fr2"><div class="fg"><label>Report # <span style="color:var(--txtm);font-size:10px">(editable)</span></label><input id="inc-num" style="color:var(--fire)"></div><div class="fg"><label>Date</label><input type="date" id="inc-date"></div></div>
+    <div class="fr2"><div class="fg"><label>Time</label><input type="time" id="inc-time"></div><div class="fg"><label>Type</label><select id="inc-type"><option>Structure Fire</option><option>Vehicle Fire</option><option>Wildland Fire</option><option>Medical</option><option>Hazmat</option><option>Rescue</option><option>Other</option></select></div></div>
+    <div class="fg"><label>Address (used for map pin)</label><input id="inc-addr" placeholder="123 Main Street, City, State" oninput="geocodePreview()" onblur="geocodePreview(true)"></div>
+    <div id="geocode-status" style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:-10px;margin-bottom:10px"></div>
+    <input type="hidden" id="inc-lat"><input type="hidden" id="inc-lng">
+    <div class="fr2"><div class="fg"><label>Units Responded</label><input type="number" id="inc-units" value="1" min="1"></div><div class="fg"><label>Injuries</label><select id="inc-inj"><option>No injuries</option><option>Minor injuries</option><option>Serious injuries</option><option>Fatalities</option></select></div></div>
+    <div class="fr2"><div class="fg"><label>Filed By</label><input id="inc-filed"></div><div class="fg"><label>Status</label><select id="inc-status"><option>Draft</option><option>Submitted</option><option>Filed</option></select></div></div>
+    <div class="fg"><label>Narrative</label><textarea id="inc-desc" placeholder="Describe the incident, actions taken, and outcome..."></textarea></div>
+  </div>
+  <div class="mf"><button class="btn bd bsm dl" id="inc-del" onclick="confirmDel('incidents','inc-id','mo-inc')" style="display:none">🗑 Delete</button><button class="btn bg" onclick="CM('mo-inc')">Cancel</button><button class="btn bs" onclick="saveInc('Draft')">Save Draft</button><button class="btn bp" onclick="saveInc('Filed')">✓ File Report</button></div>
+</div></div>
+
+<!-- DRONE -->
+<div id="mo-drone" class="mo"><div class="md wd">
+  <div class="mh"><div class="mt2" id="drone-mtitle">NEW DRONE REPORT</div><span class="mtag new" id="drone-mtag">NEW</span><button class="mx" onclick="CM('mo-drone')">✕</button></div>
+  <div class="mb"><input type="hidden" id="drone-id">
+    <div class="fr2"><div class="fg"><label>Report # <span style="color:var(--txtm);font-size:10px">(editable)</span></label><input id="drone-num" style="color:var(--tel)"></div><div class="fg"><label>Date</label><input type="date" id="drone-date"></div></div>
+    <div class="fr2"><div class="fg"><label>Drone Unit</label><select id="drone-unit"><option>Drone 1</option><option>Drone 2</option><option>Other</option></select></div><div class="fg"><label>Mission Type</label><select id="drone-mission"><option>Incident Recon</option><option>Wildland Survey</option><option>Search & Rescue</option><option>Training Flight</option><option>Damage Assessment</option><option>Routine Inspection</option><option>Other</option></select></div></div>
+    <div class="fr2"><div class="fg"><label>Takeoff Time</label><input type="time" id="drone-toff"></div><div class="fg"><label>Landing Time</label><input type="time" id="drone-land"></div></div>
+    <div class="fr2"><div class="fg"><label>Flight Duration (min)</label><input type="number" id="drone-dur" min="1" placeholder="e.g. 22"></div><div class="fg"><label>Max Altitude (ft)</label><input type="number" id="drone-alt" placeholder="e.g. 300"></div></div>
+    <div class="fg"><label>Related Incident / Location</label><input id="drone-loc" placeholder="e.g. INC-2026-047 / 412 Oak Street"></div>
+    <div class="fr2"><div class="fg"><label>Pilot (PIC)</label><input id="drone-pilot"></div><div class="fg"><label>Visual Observer</label><input id="drone-obs" placeholder="Observer (if applicable)"></div></div>
+    <div class="fr2"><div class="fg"><label>Weather</label><select id="drone-wx"><option>Clear / VFR</option><option>Partly Cloudy</option><option>Overcast</option><option>Windy (&lt;15mph)</option><option>Windy (15-25mph)</option><option>Light Rain</option><option>Night Operations</option></select></div><div class="fg"><label>Status</label><select id="drone-status"><option>Draft</option><option>Completed</option><option>Reviewed</option></select></div></div>
+    <div class="fg"><label>Mission Summary</label><textarea id="drone-sum" style="min-height:100px" placeholder="Describe what the drone observed, areas covered, hotspots detected..."></textarea></div>
+    <div class="fg"><label>Findings / Recommendations</label><textarea id="drone-find" placeholder="Key findings and recommended follow-up actions..."></textarea></div>
+  </div>
+  <div class="mf"><button class="btn bd bsm dl" id="drone-del" onclick="confirmDel('drones','drone-id','mo-drone')" style="display:none">🗑 Delete</button><button class="btn bg" onclick="CM('mo-drone')">Cancel</button><button class="btn bp" onclick="saveDrone()">💾 Save Report</button></div>
+</div></div>
+
+<!-- DEPT PROFILE EDIT -->
+<div id="mo-deptpro" class="mo"><div class="md wd">
+  <div class="mh"><div class="mt2">EDIT DEPARTMENT PROFILE</div><button class="mx" onclick="CM('mo-deptpro')">✕</button></div>
+  <div class="mb">
+    <div class="fr2"><div class="fg"><label>Department Name</label><input id="dpe-name"></div><div class="fg"><label>FDID Number</label><input id="dpe-fdid"></div></div>
+    <div class="fr2"><div class="fg"><label>Year Established</label><input id="dpe-est"></div><div class="fg"><label>ISO Rating</label><input id="dpe-iso" placeholder="Class 3"></div></div>
+    <div class="fg"><label>Department Type</label><select id="dpe-type"><option>Career (Paid)</option><option>Volunteer</option><option>Combination (Career + Volunteer)</option><option>Industrial</option></select></div>
+    <div class="fg"><label>Main Station Address</label><input id="dpe-addr"></div>
+    <div class="fr2"><div class="fg"><label>Non-Emergency Phone</label><input id="dpe-ph"></div><div class="fg"><label>Email</label><input id="dpe-em"></div></div>
+    <div class="fr2"><div class="fg"><label>Website</label><input id="dpe-web"></div><div class="fg"><label>County / District</label><input id="dpe-co"></div></div>
+    <div class="fg"><label>Service Area</label><input id="dpe-area" placeholder="42 sq miles — City and surrounds"></div>
+    <div class="fg"><label>Department Description / Mission</label><textarea id="dpe-desc"></textarea></div>
+    <div class="fg"><label>Chief / Dept Head</label><input id="dpe-chief" placeholder="Chief John Doe"></div>
+  </div>
+  <div class="mf"><button class="btn bg" onclick="CM('mo-deptpro')">Cancel</button><button class="btn bp" onclick="saveDeptPro()">💾 Save Profile</button></div>
+</div></div>
+
+<!-- STATION EDIT -->
+<div id="mo-station" class="mo"><div class="md">
+  <div class="mh"><div class="mt2" id="sta-mtitle">ADD STATION</div><span class="mtag new" id="sta-mtag">NEW</span><button class="mx" onclick="CM('mo-station')">✕</button></div>
+  <div class="mb"><input type="hidden" id="sta-id">
+    <div class="fg"><label>Station Name</label><input id="sta-nm" placeholder="Station 1 — Headquarters"></div>
+    <div class="fg"><label>Address</label><input id="sta-addr" placeholder="123 Fire Station Rd, City, State"></div>
+    <div class="fr2"><div class="fg"><label>Apparatus</label><input id="sta-app" placeholder="Engine 1, Ladder 1, Rescue 1"></div><div class="fg"><label>Personnel Assigned</label><input id="sta-pers" placeholder="e.g. 4 assigned"></div></div>
+    <div class="fr2"><div class="fg"><label>Station Phone</label><input id="sta-ph" placeholder="(555) 200-0001"></div><div class="fg"><label>Built / Established</label><input id="sta-yr" placeholder="e.g. 1952"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="sta-notes" style="min-height:60px" placeholder="Additional details..."></textarea></div>
+  </div>
+  <div class="mf"><button class="btn bd bsm dl" id="sta-del" onclick="confirmDel('stations','sta-id','mo-station')" style="display:none">🗑 Remove Station</button><button class="btn bg" onclick="CM('mo-station')">Cancel</button><button class="btn bp" onclick="saveStation()">Save Station</button></div>
+</div></div>
+
+<!-- MINUTES -->
+<div id="mo-min" class="mo"><div class="md wd">
+  <div class="mh"><div class="mt2" id="min-mtitle">NEW MEETING MINUTES</div><span class="mtag new" id="min-mtag">NEW</span><button class="mx" onclick="CM('mo-min')">✕</button></div>
+  <div class="mb"><input type="hidden" id="min-id">
+    <div class="fr3"><div class="fg"><label>Type</label><select id="min-type"><option>Business</option><option>Training</option><option>Other</option></select></div><div class="fg"><label>Date</label><input type="date" id="min-date"></div><div class="fg"><label>Time</label><input type="time" id="min-time"></div></div>
+    <div class="fr2"><div class="fg"><label>Meeting Title</label><input id="min-subj" placeholder="e.g. February Business Meeting"></div><div class="fg"><label>Location</label><input id="min-loc" placeholder="Station 1, Zoom, etc."></div></div>
+    <div class="fr2"><div class="fg"><label>Called to Order By</label><input id="min-called"></div><div class="fg"><label>Recorder</label><input id="min-rec"></div></div>
+    <div class="fg"><label>Members Present</label><textarea id="min-pres" style="min-height:54px" placeholder="List attendees..."></textarea></div>
+    <div class="fg"><label>Members Absent</label><input id="min-abs" placeholder="Names of absent members"></div>
+    <div class="fg"><label>Minutes / Notes</label><textarea id="min-body" class="minta" placeholder="OLD BUSINESS:&#10;- &#10;&#10;NEW BUSINESS:&#10;- &#10;&#10;MOTIONS:&#10;- Motion by:   Seconded by:   Vote:&#10;&#10;ACTION ITEMS:&#10;- &#10;&#10;NEXT MEETING:"></textarea></div>
+    <div class="fg"><label>Meeting Adjourned At</label><input type="time" id="min-adj"></div>
+  </div>
+  <div class="mf"><button class="btn bd bsm dl" id="min-del" onclick="confirmDel('minutes','min-id','mo-min')" style="display:none">🗑 Delete</button><button class="btn bg" onclick="CM('mo-min')">Cancel</button><button class="btn bp" onclick="saveMin()">💾 Save Minutes</button></div>
+</div></div>
+
+<!-- EVENTS -->
+<div id="mo-evt" class="mo"><div class="md">
+  <div class="mh"><div class="mt2" id="evt-mtitle">ADD EVENT</div><span class="mtag new" id="evt-mtag">NEW</span><button class="mx" onclick="CM('mo-evt')">✕</button></div>
+  <div class="mb"><input type="hidden" id="evt-id">
+    <div class="fg"><label>Event Title</label><input id="evt-nm" placeholder="Spring Training Exercise"></div>
+    <div class="fr2"><div class="fg"><label>Type</label><select id="evt-type"><option>Meeting</option><option>Training</option><option>Fundraiser</option><option>Community</option><option>Other</option></select></div><div class="fg"><label>Status</label><select id="evt-status"><option>Upcoming</option><option>Confirmed</option><option>Cancelled</option></select></div></div>
+    <div class="fr2"><div class="fg"><label>Date</label><input type="date" id="evt-date"></div><div class="fg"><label>Time</label><input type="time" id="evt-time"></div></div>
+    <div class="fg"><label>Location</label><input id="evt-loc" placeholder="Station 1, City Park, etc."></div>
+    <div class="fg"><label>Description</label><textarea id="evt-desc" placeholder="Details..."></textarea></div>
+    <div class="fg"><label>Contact / Organizer</label><input id="evt-con" placeholder="Name and phone/email"></div>
+  </div>
+  <div class="mf"><button class="btn bd bsm dl" id="evt-del" onclick="confirmDel('events','evt-id','mo-evt')" style="display:none">🗑 Delete</button><button class="btn bg" onclick="CM('mo-evt')">Cancel</button><button class="btn bp" onclick="saveEvt()">Save Event</button></div>
+</div></div>
+
+<!-- EQUIPMENT -->
+<div id="mo-equip" class="mo"><div class="md">
+  <div class="mh"><div class="mt2" id="equip-mtitle">ADD EQUIPMENT</div><span class="mtag new" id="equip-mtag">NEW</span><button class="mx" onclick="CM('mo-equip')">✕</button></div>
+  <div class="mb"><input type="hidden" id="equip-id">
+    <div class="fr2"><div class="fg"><label>Name</label><input id="equip-nm" placeholder="Engine 3"></div><div class="fg"><label>Type</label><select id="equip-type"><option>Apparatus</option><option>Hose</option><option>SCBA</option><option>Tool</option><option>Medical</option><option>PPE</option><option>Communication</option><option>Drone</option><option>Other</option></select></div></div>
+    <div class="fr2"><div class="fg"><label>Make / Model</label><input id="equip-make" placeholder="Pierce Enforcer"></div><div class="fg"><label>Year</label><input type="number" id="equip-yr" placeholder="2024"></div></div>
+    <div class="fr2"><div class="fg"><label>Serial Number</label><input id="equip-ser" placeholder="SN-XXXXX"></div><div class="fg"><label>Purchase Price ($)</label><input type="number" id="equip-price" placeholder="0"></div></div>
+    <div class="fr2"><div class="fg"><label>Condition</label><select id="equip-cond"><option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option><option>Out of Service</option></select></div><div class="fg"><label>Location / Station</label><input id="equip-loc" placeholder="Station 1"></div></div>
+    <div class="fr2"><div class="fg"><label>Assigned To</label><input id="equip-asgn" placeholder="Person or station"></div><div class="fg"><label>Next Service Date</label><input type="date" id="equip-svc"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="equip-notes" placeholder="Additional details..."></textarea></div>
+  </div>
+  <div class="mf"><button class="btn bd bsm dl" id="equip-del" onclick="confirmDel('equipment','equip-id','mo-equip')" style="display:none">🗑 Delete</button><button class="btn bg" onclick="CM('mo-equip')">Cancel</button><button class="btn bp" onclick="saveEquip()">Save Equipment</button></div>
+</div></div>
+
+<!-- MAINTENANCE -->
+<div id="mo-maint" class="mo"><div class="md">
+  <div class="mh"><div class="mt2" id="maint-mtitle">LOG MAINTENANCE</div><span class="mtag new" id="maint-mtag">NEW</span><button class="mx" onclick="CM('mo-maint')">✕</button></div>
+  <div class="mb"><input type="hidden" id="maint-id">
+    <div class="fr2"><div class="fg"><label>Equipment</label><input id="maint-equip" placeholder="Engine 1"></div><div class="fg"><label>Type</label><select id="maint-type"><option>Routine Inspection</option><option>Repair</option><option>Service</option><option>Replacement</option><option>Testing</option><option>Other</option></select></div></div>
+    <div class="fr2"><div class="fg"><label>Date Performed</label><input type="date" id="maint-date"></div><div class="fg"><label>Next Due Date</label><input type="date" id="maint-next"></div></div>
+    <div class="fr2"><div class="fg"><label>Performed By / Vendor</label><input id="maint-ven" placeholder="Vendor or technician"></div><div class="fg"><label>Cost ($)</label><input type="number" id="maint-cost" placeholder="0"></div></div>
+    <div class="fg"><label>Description of Work</label><textarea id="maint-desc" placeholder="What was done?"></textarea></div>
+  </div>
+  <div class="mf"><button class="btn bd bsm dl" id="maint-del" onclick="confirmDel('maintenance','maint-id','mo-maint')" style="display:none">🗑 Delete</button><button class="btn bg" onclick="CM('mo-maint')">Cancel</button><button class="btn bp" onclick="saveMaint()">Save Record</button></div>
+</div></div>
+
+<!-- PERSONNEL -->
+<div id="mo-pers" class="mo"><div class="md">
+  <div class="mh"><div class="mt2" id="pers-mtitle">ADD MEMBER</div><span class="mtag new" id="pers-mtag">NEW</span><button class="mx" onclick="CM('mo-pers')">✕</button></div>
+  <div class="mb"><input type="hidden" id="pers-id">
+    <div class="fr2"><div class="fg"><label>First Name</label><input id="pers-f" placeholder="First"></div><div class="fg"><label>Last Name</label><input id="pers-l" placeholder="Last"></div></div>
+    <div class="fg"><label>Email</label><input type="email" id="pers-em" placeholder="member@dept.gov"></div>
+    <div class="fr2"><div class="fg"><label>Position / Role</label><select id="pers-pos"><option>Chief</option><option>Asst. Chief</option><option>Secretary</option><option>Treasurer</option><option>Captain</option><option>Firefighter</option><option>Other</option></select></div><div class="fg"><label>Phone</label><input type="tel" id="pers-ph" placeholder="(555) 000-0000"></div></div>
+    <div class="fr2"><div class="fg"><label>Badge / Unit Number</label><input id="pers-badge" placeholder="e.g. 042"></div><div class="fg"><label>Years of Service</label><input type="number" id="pers-yrs" placeholder="e.g. 5" min="0"></div></div>
+    <div class="fg"><label>Address</label><input id="pers-addr" placeholder="123 Main St, City, State ZIP"></div>
+    <div class="fr2"><div class="fg"><label>Emergency Contact</label><input id="pers-ecn" placeholder="Name"></div><div class="fg"><label>Emergency Contact Phone</label><input id="pers-ecp" placeholder="(555) 000-0000"></div></div>
+    <div class="fg"><label>Status</label><select id="pers-status"><option>Active</option><option>Inactive</option></select></div>
+  </div>
+  <div class="mf"><button class="btn bd bsm dl" id="pers-del" onclick="confirmDel('personnel','pers-id','mo-pers')" style="display:none">🗑 Remove</button><button class="btn bg" onclick="CM('mo-pers')">Cancel</button><button class="btn bp" onclick="savePers()">Save Member</button></div>
+</div></div>
+
+<!-- FINANCE -->
+<div id="mo-fin" class="mo"><div class="md">
+  <div class="mh"><div class="mt2" id="fin-mtitle">ADD TRANSACTION</div><span class="mtag new" id="fin-mtag">NEW</span><button class="mx" onclick="CM('mo-fin')">✕</button></div>
+  <div class="mb"><input type="hidden" id="fin-id">
+    <div class="fr2"><div class="fg"><label>Type</label><select id="fin-type"><option>Income</option><option>Expense</option></select></div><div class="fg"><label>Category</label><select id="fin-cat"><option>Equipment</option><option>Payroll</option><option>Utilities</option><option>Training</option><option>Fundraiser</option><option>Grant</option><option>Donation</option><option>Other</option></select></div></div>
+    <div class="fr2"><div class="fg"><label>Amount ($)</label><input type="number" id="fin-amt" placeholder="0.00"></div><div class="fg"><label>Date</label><input type="date" id="fin-date"></div></div>
+    <div class="fg"><label>Description</label><input id="fin-desc" placeholder="Brief description"></div>
+    <div class="fg"><label>Vendor / Source</label><input id="fin-ven"></div>
+  </div>
+  <div class="mf"><button class="btn bd bsm dl" id="fin-del" onclick="confirmDel('finance','fin-id','mo-fin')" style="display:none">🗑 Delete</button><button class="btn bg" onclick="CM('mo-fin')">Cancel</button><button class="btn bp" onclick="saveFin()">Save Transaction</button></div>
+</div></div>
+
+<!-- FUNDRAISER -->
+<div id="mo-fr" class="mo"><div class="md">
+  <div class="mh"><div class="mt2" id="fr-mtitle">NEW FUNDRAISER</div><span class="mtag new" id="fr-mtag">NEW</span><button class="mx" onclick="CM('mo-fr')">✕</button></div>
+  <div class="mb"><input type="hidden" id="fr-id">
+    <div class="fg"><label>Fundraiser Name</label><input id="fr-nm" placeholder="Annual Fish Fry"></div>
+    <div class="fr2"><div class="fg"><label>Type</label><select id="fr-type"><option>Event</option><option>Drive</option><option>Online Campaign</option><option>Sale</option><option>Other</option></select></div><div class="fg"><label>Date</label><input type="date" id="fr-date"></div></div>
+    <div class="fr2"><div class="fg"><label>Goal ($)</label><input type="number" id="fr-goal" placeholder="0"></div><div class="fg"><label>Amount Raised ($)</label><input type="number" id="fr-raised" placeholder="0"></div></div>
+    <div class="fr2"><div class="fg"><label>Expenses ($)</label><input type="number" id="fr-exp" placeholder="0"></div><div class="fg"><label>Status</label><select id="fr-status"><option>Planned</option><option>Active</option><option>Completed</option><option>Cancelled</option></select></div></div>
+    <div class="fg"><label>Description</label><textarea id="fr-desc" placeholder="Describe the fundraiser..."></textarea></div>
+  </div>
+  <div class="mf"><button class="btn bd bsm dl" id="fr-del" onclick="confirmDel('fundraisers','fr-id','mo-fr')" style="display:none">🗑 Delete</button><button class="btn bg" onclick="CM('mo-fr')">Cancel</button><button class="btn bp" onclick="saveFr()">Save Fundraiser</button></div>
+</div></div>
+
+<!-- GRANT -->
+<div id="mo-gr" class="mo"><div class="md">
+  <div class="mh"><div class="mt2" id="gr-mtitle">ADD GRANT</div><span class="mtag new" id="gr-mtag">NEW</span><button class="mx" onclick="CM('mo-gr')">✕</button></div>
+  <div class="mb"><input type="hidden" id="gr-id">
+    <div class="fg"><label>Grant Name</label><input id="gr-nm" placeholder="FEMA SAFER Grant"></div>
+    <div class="fr2"><div class="fg"><label>Funding Organization</label><input id="gr-org" placeholder="FEMA, State, Private..."></div><div class="fg"><label>Grant Type</label><select id="gr-type"><option>Federal</option><option>State</option><option>Local</option><option>Private</option><option>Other</option></select></div></div>
+    <div class="fr2"><div class="fg"><label>Amount Requested ($)</label><input type="number" id="gr-req" placeholder="0"></div><div class="fg"><label>Amount Awarded ($)</label><input type="number" id="gr-award" placeholder="0"></div></div>
+    <div class="fr2"><div class="fg"><label>Application Deadline</label><input type="date" id="gr-dead"></div><div class="fg"><label>Status</label><select id="gr-status"><option>Researching</option><option>In Progress</option><option>Submitted</option><option>Awarded</option><option>Denied</option><option>Closed</option></select></div></div>
+    <div class="fg"><label>Purpose / Description</label><textarea id="gr-desc"></textarea></div>
+    <div class="fg"><label>Notes</label><textarea id="gr-notes"></textarea></div>
+  </div>
+  <div class="mf"><button class="btn bd bsm dl" id="gr-del" onclick="confirmDel('grants','gr-id','mo-gr')" style="display:none">🗑 Delete</button><button class="btn bg" onclick="CM('mo-gr')">Cancel</button><button class="btn bp" onclick="saveGr()">Save Grant</button></div>
+</div></div>
+
+<!-- CONFIRM DELETE -->
+<div id="mo-confirm" class="mo"><div class="md" style="max-width:400px">
+  <div class="mh"><div class="mt2">CONFIRM DELETE</div><button class="mx" onclick="CM('mo-confirm')">✕</button></div>
+  <div class="mb" style="text-align:center;padding:22px"><div style="font-size:44px;margin-bottom:11px">⚠️</div><div id="conf-msg" style="color:var(--txt2);line-height:1.7;font-size:14px"></div></div>
+  <div class="mf" style="justify-content:center;gap:12px"><button class="btn bg" onclick="CM('mo-confirm')">Cancel</button><button class="btn bd" id="conf-yes">🗑 Yes, Delete Permanently</button></div>
+</div></div>
+
+<div class="toastc" id="tc"></div>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ═══════════════════════════════════════════
+// LANGUAGE SYSTEM
+// ═══════════════════════════════════════════
+let LANG='en';
+const TRANSLATIONS={
+  en:{
+    welcome:'Welcome',signin:'Sign In',register:'Register',email:'Email Address',password:'Password',
+    signinBtn:'Sign In',name:'Name',dept:'Department',position:'Position',continue:'Continue →',
+    dashboard:'Dashboard',incidents:'Incidents',map:'Fire Map',drone:'Drone Reports',
+    deptProfile:'Dept. Profile',minutes:'Meeting Minutes',events:'Upcoming Events',
+    equipment:'Equipment',maintenance:'Maintenance',personnel:'Personnel',
+    finance:'Finance',fundraisers:'Fundraisers',grants:'Grants',
+    fileReport:'+ File New Report',newDrone:'+ New Drone Report',addMinutes:'+ Add Minutes',
+    addEvent:'+ Add Event',addEquipment:'+ Add Equipment',logMaint:'+ Log Maintenance',
+    addMember:'+ Add Member',addTransaction:'+ Add Transaction',newFundraiser:'+ New Fundraiser',
+    addGrant:'+ Add Grant',editProfile:'✏ Edit Profile',save:'💾 Save',cancel:'Cancel',
+    delete:'🗑 Delete',readOnly:'Read-only — contact an admin to make changes',
+    noData:'No records on file',placePin:'📍 Place Station Pin',cancelPlace:'✕ Cancel',
+    pinHint:'Click anywhere on the map to place the station pin',
+    profileSaved:'Profile saved!',memberUpdated:'Member updated!',reportFiled:'Report filed!',
+    reportUpdated:'Report updated!',deleted:'Deleted',generated:'Code generated',
+    addressNotFound:'Address not found — pin will not appear on map',
+    locating:'Looking up address...',located:'Located',
+    myProfile:'My Profile',language:'Language',settings:'Settings',
+    fullAccess:'FULL ACCESS',member:'MEMBER',editInfo:'✏ Edit My Info',
+    saveChanges:'💾 Save Changes',changePassword:'Change Password',
+    leaveBlank:'Leave blank to keep current password',
+    joinCode:'Member Join Code',generateCode:'🔑 Generate New Code',
+    editStation:'Edit Station',addStation:'+ Add Station',
+  },
+  es:{
+    welcome:'Bienvenido',signin:'Iniciar Sesión',register:'Registrarse',email:'Correo Electrónico',password:'Contraseña',
+    signinBtn:'Entrar',name:'Nombre',dept:'Departamento',position:'Cargo',continue:'Continuar →',
+    dashboard:'Panel',incidents:'Incidentes',map:'Mapa de Fuegos',drone:'Drones',
+    deptProfile:'Perfil Depto.',minutes:'Actas',events:'Eventos',
+    equipment:'Equipo',maintenance:'Mantenimiento',personnel:'Personal',
+    finance:'Finanzas',fundraisers:'Recaudación',grants:'Subvenciones',
+    fileReport:'+ Nuevo Informe',newDrone:'+ Informe Drone',addMinutes:'+ Añadir Actas',
+    addEvent:'+ Añadir Evento',addEquipment:'+ Añadir Equipo',logMaint:'+ Registrar Mant.',
+    addMember:'+ Añadir Miembro',addTransaction:'+ Añadir Transacción',newFundraiser:'+ Nueva Campaña',
+    addGrant:'+ Añadir Subvención',editProfile:'✏ Editar Perfil',save:'💾 Guardar',cancel:'Cancelar',
+    delete:'🗑 Eliminar',readOnly:'Solo lectura — contacte a un administrador',
+    noData:'Sin registros',placePin:'📍 Colocar Pin de Estación',cancelPlace:'✕ Cancelar',
+    pinHint:'Haga clic en el mapa para colocar el pin de la estación',
+    profileSaved:'¡Perfil guardado!',memberUpdated:'¡Miembro actualizado!',reportFiled:'¡Informe enviado!',
+    reportUpdated:'¡Informe actualizado!',deleted:'Eliminado',generated:'Código generado',
+    addressNotFound:'Dirección no encontrada — el pin no aparecerá en el mapa',
+    locating:'Buscando dirección...',located:'Encontrado',
+    myProfile:'Mi Perfil',language:'Idioma',settings:'Ajustes',
+    fullAccess:'ACCESO TOTAL',member:'MIEMBRO',editInfo:'✏ Editar Mis Datos',
+    saveChanges:'💾 Guardar Cambios',changePassword:'Cambiar Contraseña',
+    leaveBlank:'Dejar en blanco para conservar la contraseña',
+    joinCode:'Código de Acceso',generateCode:'🔑 Generar Código',
+    editStation:'Editar Estación',addStation:'+ Añadir Estación',
+  },
+  fr:{
+    welcome:'Bienvenue',signin:'Connexion',register:'S\'inscrire',email:'Adresse email',password:'Mot de passe',
+    signinBtn:'Connexion',name:'Nom',dept:'Département',position:'Poste',continue:'Continuer →',
+    dashboard:'Tableau de bord',incidents:'Incidents',map:'Carte des feux',drone:'Rapports drone',
+    deptProfile:'Profil Dépt.',minutes:'Procès-verbaux',events:'Événements',
+    equipment:'Équipement',maintenance:'Maintenance',personnel:'Personnel',
+    finance:'Finances',fundraisers:'Collectes',grants:'Subventions',
+    fileReport:'+ Nouveau rapport',newDrone:'+ Rapport drone',addMinutes:'+ Ajouter PV',
+    addEvent:'+ Ajouter événement',addEquipment:'+ Ajouter équipement',logMaint:'+ Journal maint.',
+    addMember:'+ Ajouter membre',addTransaction:'+ Ajouter transaction',newFundraiser:'+ Nouvelle collecte',
+    addGrant:'+ Ajouter subvention',editProfile:'✏ Modifier profil',save:'💾 Enregistrer',cancel:'Annuler',
+    delete:'🗑 Supprimer',readOnly:'Lecture seule — contactez un administrateur',
+    noData:'Aucun enregistrement',placePin:'📍 Placer pin station',cancelPlace:'✕ Annuler',
+    pinHint:'Cliquez sur la carte pour placer le pin de la station',
+    profileSaved:'Profil enregistré!',memberUpdated:'Membre mis à jour!',reportFiled:'Rapport soumis!',
+    reportUpdated:'Rapport mis à jour!',deleted:'Supprimé',generated:'Code généré',
+    addressNotFound:'Adresse introuvable — le pin n\'apparaîtra pas sur la carte',
+    locating:'Recherche de l\'adresse...',located:'Localisé',
+    myProfile:'Mon profil',language:'Langue',settings:'Paramètres',
+    fullAccess:'ACCÈS COMPLET',member:'MEMBRE',editInfo:'✏ Modifier mes infos',
+    saveChanges:'💾 Enregistrer',changePassword:'Changer le mot de passe',
+    leaveBlank:'Laisser vide pour conserver le mot de passe',
+    joinCode:'Code d\'adhésion',generateCode:'🔑 Générer un code',
+    editStation:'Modifier station',addStation:'+ Ajouter station',
+  },
+  de:{
+    welcome:'Willkommen',signin:'Anmelden',register:'Registrieren',email:'E-Mail-Adresse',password:'Passwort',
+    signinBtn:'Anmelden',name:'Name',dept:'Abteilung',position:'Position',continue:'Weiter →',
+    dashboard:'Dashboard',incidents:'Einsätze',map:'Feuerkarte',drone:'Drohnenberichte',
+    deptProfile:'Abt.-Profil',minutes:'Sitzungsprotokolle',events:'Veranstaltungen',
+    equipment:'Ausrüstung',maintenance:'Wartung',personnel:'Personal',
+    finance:'Finanzen',fundraisers:'Spendenaktionen',grants:'Fördermittel',
+    fileReport:'+ Neuer Bericht',newDrone:'+ Drohnenbericht',addMinutes:'+ Protokoll hinzufügen',
+    addEvent:'+ Ereignis hinzufügen',addEquipment:'+ Ausrüstung hinzufügen',logMaint:'+ Wartung erfassen',
+    addMember:'+ Mitglied hinzufügen',addTransaction:'+ Transaktion',newFundraiser:'+ Neue Aktion',
+    addGrant:'+ Förderantrag',editProfile:'✏ Profil bearbeiten',save:'💾 Speichern',cancel:'Abbrechen',
+    delete:'🗑 Löschen',readOnly:'Nur lesen — Administrator kontaktieren',
+    noData:'Keine Einträge',placePin:'📍 Stationspin setzen',cancelPlace:'✕ Abbrechen',
+    pinHint:'Klicken Sie auf die Karte, um den Stationspin zu setzen',
+    profileSaved:'Profil gespeichert!',memberUpdated:'Mitglied aktualisiert!',reportFiled:'Bericht eingereicht!',
+    reportUpdated:'Bericht aktualisiert!',deleted:'Gelöscht',generated:'Code generiert',
+    addressNotFound:'Adresse nicht gefunden — Pin erscheint nicht auf der Karte',
+    locating:'Adresse wird gesucht...',located:'Gefunden',
+    myProfile:'Mein Profil',language:'Sprache',settings:'Einstellungen',
+    fullAccess:'VOLLZUGRIFF',member:'MITGLIED',editInfo:'✏ Meine Daten bearbeiten',
+    saveChanges:'💾 Änderungen speichern',changePassword:'Passwort ändern',
+    leaveBlank:'Leer lassen, um das Passwort zu behalten',
+    joinCode:'Beitrittscode',generateCode:'🔑 Code generieren',
+    editStation:'Station bearbeiten',addStation:'+ Station hinzufügen',
+  },
+  pt:{welcome:'Bem-vindo',signin:'Entrar',register:'Cadastrar',dashboard:'Painel',incidents:'Incidentes',map:'Mapa de Incêndios',personnel:'Pessoal',finance:'Finanças',save:'💾 Salvar',cancel:'Cancelar',delete:'🗑 Excluir',readOnly:'Somente leitura',noData:'Sem registros',placePin:'📍 Colocar pin da estação',cancelPlace:'✕ Cancelar',pinHint:'Clique no mapa para colocar o pin da estação',profileSaved:'Perfil salvo!',memberUpdated:'Membro atualizado!',reportFiled:'Relatório enviado!',reportUpdated:'Relatório atualizado!',deleted:'Excluído',generated:'Código gerado',addressNotFound:'Endereço não encontrado',locating:'Buscando endereço...',located:'Localizado',language:'Idioma',settings:'Configurações',fullAccess:'ACESSO TOTAL',member:'MEMBRO',editInfo:'✏ Editar Meus Dados',saveChanges:'💾 Salvar',changePassword:'Alterar senha',leaveBlank:'Deixe em branco para manter a senha',joinCode:'Código de acesso',generateCode:'🔑 Gerar código',editStation:'Editar estação',addStation:'+ Adicionar estação',email:'E-mail',password:'Senha',signinBtn:'Entrar',name:'Nome',dept:'Departamento',position:'Cargo',continue:'Continuar →',drone:'Relatórios drone',deptProfile:'Perfil Depto.',minutes:'Atas',events:'Eventos',equipment:'Equipamento',maintenance:'Manutenção',fundraisers:'Arrecadações',grants:'Subsídios',fileReport:'+ Novo relatório',newDrone:'+ Relatório drone',addMinutes:'+ Adicionar atas',addEvent:'+ Adicionar evento',addEquipment:'+ Adicionar equipamento',logMaint:'+ Registrar manutenção',addMember:'+ Adicionar membro',addTransaction:'+ Adicionar transação',newFundraiser:'+ Nova arrecadação',addGrant:'+ Adicionar subsídio',editProfile:'✏ Editar perfil',myProfile:'Meu perfil',welcome:'Bem-vindo'},
+  it:{welcome:'Benvenuto',signin:'Accedi',register:'Registrati',dashboard:'Dashboard',incidents:'Incidenti',map:'Mappa incendi',personnel:'Personale',finance:'Finanze',save:'💾 Salva',cancel:'Annulla',delete:'🗑 Elimina',readOnly:'Sola lettura',noData:'Nessun record',placePin:'📍 Posiziona pin stazione',cancelPlace:'✕ Annulla',pinHint:'Clicca sulla mappa per posizionare il pin della stazione',profileSaved:'Profilo salvato!',memberUpdated:'Membro aggiornato!',reportFiled:'Rapporto inviato!',reportUpdated:'Rapporto aggiornato!',deleted:'Eliminato',generated:'Codice generato',addressNotFound:'Indirizzo non trovato',locating:'Ricerca indirizzo...',located:'Trovato',language:'Lingua',settings:'Impostazioni',fullAccess:'ACCESSO COMPLETO',member:'MEMBRO',editInfo:'✏ Modifica le mie info',saveChanges:'💾 Salva modifiche',changePassword:'Cambia password',leaveBlank:'Lascia vuoto per mantenere la password',joinCode:'Codice accesso',generateCode:'🔑 Genera codice',editStation:'Modifica stazione',addStation:'+ Aggiungi stazione',email:'Email',password:'Password',signinBtn:'Accedi',name:'Nome',dept:'Dipartimento',position:'Ruolo',continue:'Continua →',drone:'Rapporti drone',deptProfile:'Profilo Dipt.',minutes:'Verbali',events:'Eventi',equipment:'Attrezzatura',maintenance:'Manutenzione',fundraisers:'Raccolte fondi',grants:'Sovvenzioni',fileReport:'+ Nuovo rapporto',newDrone:'+ Rapporto drone',addMinutes:'+ Aggiungi verbale',addEvent:'+ Aggiungi evento',addEquipment:'+ Aggiungi attrezzatura',logMaint:'+ Registra manutenzione',addMember:'+ Aggiungi membro',addTransaction:'+ Aggiungi transazione',newFundraiser:'+ Nuova raccolta',addGrant:'+ Aggiungi sovvenzione',editProfile:'✏ Modifica profilo',myProfile:'Il mio profilo'},
+  zh:{welcome:'欢迎',signin:'登录',register:'注册',dashboard:'仪表板',incidents:'事故报告',map:'火灾地图',personnel:'人员',finance:'财务',save:'💾 保存',cancel:'取消',delete:'🗑 删除',readOnly:'只读 — 请联系管理员',noData:'暂无记录',placePin:'📍 放置站点图钉',cancelPlace:'✕ 取消',pinHint:'点击地图放置站点图钉',profileSaved:'个人资料已保存！',memberUpdated:'成员已更新！',reportFiled:'报告已提交！',reportUpdated:'报告已更新！',deleted:'已删除',generated:'已生成代码',addressNotFound:'未找到地址',locating:'正在查找地址...',located:'已找到',language:'语言',settings:'设置',fullAccess:'完全访问',member:'成员',editInfo:'✏ 编辑我的信息',saveChanges:'💾 保存更改',changePassword:'更改密码',leaveBlank:'留空以保留当前密码',joinCode:'加入代码',generateCode:'🔑 生成代码',editStation:'编辑站点',addStation:'+ 添加站点',email:'邮箱',password:'密码',signinBtn:'登录',name:'姓名',dept:'部门',position:'职位',continue:'继续 →',drone:'无人机报告',deptProfile:'部门简介',minutes:'会议记录',events:'即将发生的事件',equipment:'设备',maintenance:'维护',fundraisers:'筹款',grants:'拨款',fileReport:'+ 新报告',newDrone:'+ 无人机报告',addMinutes:'+ 添加记录',addEvent:'+ 添加事件',addEquipment:'+ 添加设备',logMaint:'+ 记录维护',addMember:'+ 添加成员',addTransaction:'+ 添加交易',newFundraiser:'+ 新筹款',addGrant:'+ 添加拨款',editProfile:'✏ 编辑资料',myProfile:'我的资料'},
+  ja:{welcome:'ようこそ',signin:'サインイン',register:'登録',dashboard:'ダッシュボード',incidents:'インシデント',map:'火災マップ',personnel:'人員',finance:'財務',save:'💾 保存',cancel:'キャンセル',delete:'🗑 削除',readOnly:'読み取り専用',noData:'記録なし',placePin:'📍 ステーションピンを配置',cancelPlace:'✕ キャンセル',pinHint:'マップをクリックしてステーションピンを配置',profileSaved:'プロフィールを保存しました！',memberUpdated:'メンバーを更新しました！',reportFiled:'レポートを提出しました！',reportUpdated:'レポートを更新しました！',deleted:'削除しました',generated:'コードを生成しました',addressNotFound:'住所が見つかりません',locating:'住所を検索中...',located:'見つかりました',language:'言語',settings:'設定',fullAccess:'フルアクセス',member:'メンバー',editInfo:'✏ 情報を編集',saveChanges:'💾 変更を保存',changePassword:'パスワードを変更',leaveBlank:'空白のままにすると現在のパスワードを保持',joinCode:'参加コード',generateCode:'🔑 コードを生成',editStation:'ステーションを編集',addStation:'+ ステーションを追加',email:'メールアドレス',password:'パスワード',signinBtn:'サインイン',name:'名前',dept:'部門',position:'役職',continue:'続ける →',drone:'ドローンレポート',deptProfile:'部門プロフィール',minutes:'議事録',events:'イベント',equipment:'機器',maintenance:'メンテナンス',fundraisers:'資金調達',grants:'助成金',fileReport:'+ 新規レポート',newDrone:'+ ドローンレポート',addMinutes:'+ 議事録を追加',addEvent:'+ イベントを追加',addEquipment:'+ 機器を追加',logMaint:'+ メンテナンスを記録',addMember:'+ メンバーを追加',addTransaction:'+ 取引を追加',newFundraiser:'+ 新規資金調達',addGrant:'+ 助成金を追加',editProfile:'✏ プロフィールを編集',myProfile:'マイプロフィール'},
+  ko:{welcome:'환영합니다',signin:'로그인',register:'회원가입',dashboard:'대시보드',incidents:'사건',map:'화재 지도',personnel:'인원',finance:'재무',save:'💾 저장',cancel:'취소',delete:'🗑 삭제',readOnly:'읽기 전용',noData:'기록 없음',placePin:'📍 소방서 핀 배치',cancelPlace:'✕ 취소',pinHint:'지도를 클릭하여 소방서 핀을 배치하세요',profileSaved:'프로필이 저장되었습니다!',memberUpdated:'회원이 업데이트되었습니다!',reportFiled:'보고서가 제출되었습니다!',reportUpdated:'보고서가 업데이트되었습니다!',deleted:'삭제됨',generated:'코드 생성됨',addressNotFound:'주소를 찾을 수 없음',locating:'주소 검색 중...',located:'찾았습니다',language:'언어',settings:'설정',fullAccess:'전체 접근',member:'회원',editInfo:'✏ 내 정보 편집',saveChanges:'💾 변경사항 저장',changePassword:'비밀번호 변경',leaveBlank:'현재 비밀번호를 유지하려면 비워두세요',joinCode:'참여 코드',generateCode:'🔑 코드 생성',editStation:'소방서 편집',addStation:'+ 소방서 추가',email:'이메일 주소',password:'비밀번호',signinBtn:'로그인',name:'이름',dept:'부서',position:'직위',continue:'계속 →',drone:'드론 보고서',deptProfile:'부서 프로필',minutes:'회의록',events:'예정된 행사',equipment:'장비',maintenance:'유지보수',fundraisers:'모금',grants:'보조금',fileReport:'+ 새 보고서',newDrone:'+ 드론 보고서',addMinutes:'+ 회의록 추가',addEvent:'+ 행사 추가',addEquipment:'+ 장비 추가',logMaint:'+ 유지보수 기록',addMember:'+ 회원 추가',addTransaction:'+ 거래 추가',newFundraiser:'+ 새 모금',addGrant:'+ 보조금 추가',editProfile:'✏ 프로필 편집',myProfile:'내 프로필'},
+  ar:{welcome:'مرحباً',signin:'تسجيل الدخول',register:'تسجيل',dashboard:'لوحة التحكم',incidents:'الحوادث',map:'خريطة الحرائق',personnel:'الأفراد',finance:'المالية',save:'💾 حفظ',cancel:'إلغاء',delete:'🗑 حذف',readOnly:'للقراءة فقط',noData:'لا توجد سجلات',placePin:'📍 وضع دبوس المحطة',cancelPlace:'✕ إلغاء',pinHint:'انقر على الخريطة لوضع دبوس المحطة',profileSaved:'تم حفظ الملف الشخصي!',memberUpdated:'تم تحديث العضو!',reportFiled:'تم تقديم التقرير!',reportUpdated:'تم تحديث التقرير!',deleted:'تم الحذف',generated:'تم إنشاء الرمز',addressNotFound:'العنوان غير موجود',locating:'جاري البحث عن العنوان...',located:'تم العثور عليه',language:'اللغة',settings:'الإعدادات',fullAccess:'وصول كامل',member:'عضو',editInfo:'✏ تعديل معلوماتي',saveChanges:'💾 حفظ التغييرات',changePassword:'تغيير كلمة المرور',leaveBlank:'اتركه فارغاً للاحتفاظ بكلمة المرور',joinCode:'رمز الانضمام',generateCode:'🔑 إنشاء رمز',editStation:'تعديل المحطة',addStation:'+ إضافة محطة',email:'البريد الإلكتروني',password:'كلمة المرور',signinBtn:'دخول',name:'الاسم',dept:'القسم',position:'المنصب',continue:'متابعة →',drone:'تقارير الطائرات',deptProfile:'ملف القسم',minutes:'محاضر الاجتماعات',events:'الأحداث القادمة',equipment:'المعدات',maintenance:'الصيانة',fundraisers:'جمع التبرعات',grants:'المنح',fileReport:'+ تقرير جديد',newDrone:'+ تقرير طائرة',addMinutes:'+ إضافة محضر',addEvent:'+ إضافة حدث',addEquipment:'+ إضافة معدات',logMaint:'+ تسجيل صيانة',addMember:'+ إضافة عضو',addTransaction:'+ إضافة معاملة',newFundraiser:'+ جمع تبرعات جديد',addGrant:'+ إضافة منحة',editProfile:'✏ تعديل الملف',myProfile:'ملفي الشخصي'},
+  tl:{welcome:'Maligayang pagdating',signin:'Mag-login',register:'Mag-rehistro',dashboard:'Dashboard',incidents:'Mga Insidente',map:'Mapa ng Sunog',personnel:'Mga Miyembro',finance:'Pananalapi',save:'💾 I-save',cancel:'Kanselahin',delete:'🗑 Burahin',readOnly:'Basahin lamang',noData:'Walang rekord',placePin:'📍 Maglagay ng pin ng istasyon',cancelPlace:'✕ Kanselahin',pinHint:'I-click ang mapa para maglagay ng pin ng istasyon',profileSaved:'Na-save ang profile!',memberUpdated:'Na-update ang miyembro!',reportFiled:'Naisumite ang ulat!',reportUpdated:'Na-update ang ulat!',deleted:'Nabura',generated:'Nagawa ang code',addressNotFound:'Hindi mahanap ang address',locating:'Hinahanap ang address...',located:'Nahanap',language:'Wika',settings:'Mga Setting',fullAccess:'BUONG ACCESS',member:'MIYEMBRO',editInfo:'✏ I-edit ang Aking Info',saveChanges:'💾 I-save ang Mga Pagbabago',changePassword:'Baguhin ang Password',leaveBlank:'Iwanang blangko para mapanatili ang password',joinCode:'Join Code',generateCode:'🔑 Gumawa ng Code',editStation:'I-edit ang Istasyon',addStation:'+ Magdagdag ng Istasyon',email:'Email',password:'Password',signinBtn:'Mag-login',name:'Pangalan',dept:'Departamento',position:'Posisyon',continue:'Magpatuloy →',drone:'Mga Ulat ng Drone',deptProfile:'Profile ng Dept.',minutes:'Mga Minuto',events:'Mga Paparating na Evento',equipment:'Kagamitan',maintenance:'Pagpapanatili',fundraisers:'Pangongolekta',grants:'Mga Grant',fileReport:'+ Bagong Ulat',newDrone:'+ Ulat ng Drone',addMinutes:'+ Magdagdag ng Minuto',addEvent:'+ Magdagdag ng Event',addEquipment:'+ Magdagdag ng Kagamitan',logMaint:'+ I-log ang Pagpapanatili',addMember:'+ Magdagdag ng Miyembro',addTransaction:'+ Magdagdag ng Transaksyon',newFundraiser:'+ Bagong Pangongolekta',addGrant:'+ Magdagdag ng Grant',editProfile:'✏ I-edit ang Profile',myProfile:'Aking Profile'},
+  vi:{welcome:'Chào mừng',signin:'Đăng nhập',register:'Đăng ký',dashboard:'Bảng điều khiển',incidents:'Sự cố',map:'Bản đồ cháy',personnel:'Nhân sự',finance:'Tài chính',save:'💾 Lưu',cancel:'Hủy',delete:'🗑 Xóa',readOnly:'Chỉ đọc',noData:'Không có hồ sơ',placePin:'📍 Đặt ghim trạm',cancelPlace:'✕ Hủy',pinHint:'Nhấp vào bản đồ để đặt ghim trạm',profileSaved:'Đã lưu hồ sơ!',memberUpdated:'Đã cập nhật thành viên!',reportFiled:'Đã nộp báo cáo!',reportUpdated:'Đã cập nhật báo cáo!',deleted:'Đã xóa',generated:'Đã tạo mã',addressNotFound:'Không tìm thấy địa chỉ',locating:'Đang tìm địa chỉ...',located:'Đã tìm thấy',language:'Ngôn ngữ',settings:'Cài đặt',fullAccess:'TRUY CẬP ĐẦY ĐỦ',member:'THÀNH VIÊN',editInfo:'✏ Chỉnh sửa thông tin',saveChanges:'💾 Lưu thay đổi',changePassword:'Đổi mật khẩu',leaveBlank:'Để trống để giữ mật khẩu hiện tại',joinCode:'Mã tham gia',generateCode:'🔑 Tạo mã',editStation:'Chỉnh sửa trạm',addStation:'+ Thêm trạm',email:'Địa chỉ email',password:'Mật khẩu',signinBtn:'Đăng nhập',name:'Tên',dept:'Bộ phận',position:'Chức vụ',continue:'Tiếp tục →',drone:'Báo cáo drone',deptProfile:'Hồ sơ Phòng',minutes:'Biên bản',events:'Sự kiện sắp tới',equipment:'Thiết bị',maintenance:'Bảo trì',fundraisers:'Gây quỹ',grants:'Tài trợ',fileReport:'+ Báo cáo mới',newDrone:'+ Báo cáo drone',addMinutes:'+ Thêm biên bản',addEvent:'+ Thêm sự kiện',addEquipment:'+ Thêm thiết bị',logMaint:'+ Ghi bảo trì',addMember:'+ Thêm thành viên',addTransaction:'+ Thêm giao dịch',newFundraiser:'+ Gây quỹ mới',addGrant:'+ Thêm tài trợ',editProfile:'✏ Chỉnh sửa hồ sơ',myProfile:'Hồ sơ của tôi'},
+};
+function T(key){ return (TRANSLATIONS[LANG]&&TRANSLATIONS[LANG][key])||TRANSLATIONS['en'][key]||key; }
+
+let selectedLang='en';
+function setLang(code,el){
+  selectedLang=code;
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function confirmLang(){
+  LANG=selectedLang;
+  saveStore('fc_lang',LANG);
+  showScreen('sl');
+  applyTranslations();
+}
+function showLangScreen(){
+  // When called from inside app, go back to lang screen then return
+  showScreen('slang');
+}
+function applyTranslations(){
+  // Sidebar nav labels
+  const navMap={
+    'dash':'dashboard','inc':'incidents','map':'map','drone':'drone',
+    'deptpro':'deptProfile','minutes':'minutes','events':'events',
+    'equip':'equipment','maint':'maintenance','pers':'personnel',
+    'fin':'finance','fr':'fundraisers','gr':'grants','userpro':'myProfile','lang':'language'
+  };
+  document.querySelectorAll('.ni span:last-child').forEach(el=>{
+    const ni=el.closest('.ni');
+    if(!ni) return;
+    const onclick=ni.getAttribute('onclick')||'';
+    const m=onclick.match(/go\('([^']+)'/);
+    if(m&&navMap[m[1]]) el.textContent=T(navMap[m[1]]);
+    if(onclick.includes('showLangScreen')) el.textContent=T('language');
+  });
+}
+
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+const ADMIN_ROLES=['Chief','Asst. Chief','Secretary','Treasurer'];
+const MOS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYNAMES=['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+const MONSFULL=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+const G=id=>document.getElementById(id);
+let uid=900, CU=null, leafletMap=null, mapMarkers=[], geocodeTimer=null;
+
+// ═══════════════════════════════════════════
+// DEMO DEPARTMENTS & USERS DATABASE
+// ═══════════════════════════════════════════
+// In production this would be a real backend.
+// Here we use localStorage to persist across sessions.
+
+// ═══════════════════════════════════════════
+// FIREBASE STORAGE LAYER
+// Replaces localStorage with Firestore.
+// In-memory cache keeps UI snappy.
+// ═══════════════════════════════════════════
+const _cache = {};
+
+// localStorage used ONLY for language pref
+function loadStore(key,def){ try{const v=localStorage.getItem(key);return v?JSON.parse(v):def;}catch(e){return def;} }
+function saveStore(key,val){ try{localStorage.setItem(key,JSON.stringify(val));}catch(e){} }
+
+// ── Firestore helpers ──
+async function fbGetDoc2(path){
+  const snap=await window.fbGetDoc(path); return snap.exists()?snap.data():null;
+}
+async function fbSetDoc2(path,data){
+  await window.fbSetDoc(path,data,{merge:true});
+}
+async function fbLoadCol(col){
+  if(!CU?.deptId) return [];
+  const path=`depts/${CU.deptId}/${col}`;
+  const snap=await window.fbGetCol(path);
+  const data=[]; snap.forEach(d=>data.push({...d.data()}));
+  _cache[col]=data; return data;
+}
+async function fbSaveRecord(col,rec,deptId){
+  const did=deptId||CU?.deptId; if(!did) return;
+  await window.fbSetDoc(`depts/${did}/${col}/${rec.id}`,rec,{merge:true});
+}
+async function fbDelRecord(col,id,deptId){
+  const did=deptId||CU?.deptId; if(!did) return;
+  await window.fbDelDoc(`depts/${did}/${col}/${id}`);
+}
+
+// ── Dept/User Firestore ops ──
+async function fbLoadDept(deptId){
+  return fbGetDoc2(`depts/${deptId}`);
+}
+async function fbSaveDept(dept){
+  await window.fbSetDoc(`depts/${dept.id}`,dept,{merge:true});
+}
+async function fbLoadUser(uid){
+  return fbGetDoc2(`users/${uid}`);
+}
+async function fbSaveUser(user){
+  await window.fbSetDoc(`users/${user.id}`,user,{merge:true});
+}
+
+// Load all sub-collections for current dept into cache
+async function loadAllDeptData(){
+  const cols=['incidents','drones','minutes','events','equipment',
+              'maintenance','personnel','finance','fundraisers','grants'];
+  await Promise.all(cols.map(c=>fbLoadCol(c)));
+}
+
+// ── Sync-compatible accessors (same API as before) ──
+function getDepts(){ return _cache['__depts']||[]; }
+function getUsers(){ return _cache['__users']||[]; }
+function getDept(id){ return getDepts().find(d=>d.id===id)||null; }
+function getDeptData(key){ return (_cache[key]||[]).filter(r=>r.deptId===CU?.deptId); }
+function saveDepts(depts){
+  _cache['__depts']=depts;
+  depts.forEach(d=>fbSaveDept(d).catch(e=>console.error('saveDepts',e)));
+}
+function saveUsers(users){
+  _cache['__users']=users;
+  users.forEach(u=>fbSaveUser(u).catch(e=>console.error('saveUsers',e)));
+}
+function upsertRecord(key,rec){
+  const arr=_cache[key]||[];
+  const idx=arr.findIndex(r=>r.id===rec.id);
+  if(idx>=0) arr[idx]=rec; else arr.unshift(rec);
+  _cache[key]=arr;
+  // Pass rec.deptId as fallback so saves work even before CU is set
+  fbSaveRecord(key,rec,rec.deptId).catch(e=>toast('Sync error: '+e.message,'err'));
+}
+function deleteRecord(key,id){
+  _cache[key]=(_cache[key]||[]).filter(r=>r.id!==id);
+  fbDelRecord(key,id).catch(e=>toast('Delete error: '+e.message,'err'));
+}
+
+// ═══════════════════════════════════════════
+// JOIN CODE SYSTEM
+// ═══════════════════════════════════════════
+function genCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars
+  let code='';
+  for(let i=0;i<3;i++) code+=chars[Math.floor(Math.random()*chars.length)];
+  code+='-';
+  for(let i=0;i<3;i++) code+=chars[Math.floor(Math.random()*chars.length)];
+  const newCode={code,created:Date.now(),expires:Date.now()+(7*24*60*60*1000),used:false};
+  const depts=getDepts();
+  const dept=depts.find(d=>d.id===CU.deptId);
+  if(dept){
+    if(!dept.joinCodes) dept.joinCodes=[];
+    dept.joinCodes.push(newCode);
+    saveDepts(depts);
+    renderCodes();
+    toast('Code generated: '+code,'ok');
+  }
+}
+
+function renderCodes(){
+  const dept=getDept(CU.deptId); if(!dept) return;
+  const codes=(dept.joinCodes||[]).filter(c=>!c.used);
+  const list=G('codes-list'); if(!list) return;
+  if(!codes.length){ list.innerHTML=`<div style="text-align:center;padding:20px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO ACTIVE CODES — Generate one above</div>`; return; }
+  list.innerHTML=codes.map(c=>{
+    const exp=new Date(c.expires);
+    const expired=Date.now()>c.expires;
+    return`<div style="display:flex;align-items:center;gap:14px;padding:12px 14px;background:var(--elev);border:1px solid var(--bdr);border-radius:3px;margin-bottom:8px">
+      <div class="code-val" style="font-size:22px;letter-spacing:6px;${expired?'color:var(--red)':''}">${c.code}</div>
+      <div style="flex:1;font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px">
+        ${expired?'<span style="color:var(--red)">EXPIRED</span>':'<span style="color:var(--grn)">ACTIVE</span>'} · Expires ${exp.toLocaleDateString()}
+      </div>
+      <button class="btn bd bxs" onclick="revokeCode('${c.code}')">Revoke</button>
+    </div>`;
+  }).join('');
+}
+
+function revokeCode(code){
+  const depts=getDepts(); const dept=depts.find(d=>d.id===CU.deptId);
+  if(dept&&dept.joinCodes){ dept.joinCodes=dept.joinCodes.filter(c=>c.code!==code); saveDepts(depts); renderCodes(); toast('Code revoked','warn'); }
+}
+
+function verifyCode(code){
+  code=code.toUpperCase().replace(/[^A-Z0-9-]/g,'');
+  const all=getDepts();
+  for(const dept of all){
+    const found=(dept.joinCodes||[]).find(c=>c.code===code&&!c.used&&Date.now()<c.expires);
+    if(found) return {dept,code:found};
+  }
+  return null;
+}
+
+function useCode(deptId, code){
+  const depts=getDepts(); const dept=depts.find(d=>d.id===deptId);
+  if(dept&&dept.joinCodes){
+    const c=dept.joinCodes.find(x=>x.code===code);
+    if(c) c.used=true;
+    saveDepts(depts);
+  }
+}
+
+// ═══════════════════════════════════════════
+// REGISTRATION FLOW
+// ═══════════════════════════════════════════
+let regData={};
+
+function switchTab(tab,btn){
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on'); G('tp-'+tab).classList.add('on');
+}
+
+function regStep1(){
+  const f=G('suf').value.trim(),l=G('sul').value.trim(),em=G('sue').value.trim(),pw=G('supw').value,pos=G('sup').value;
+  if(!f||!l||!em||!pw||!pos){toast('Please fill out all fields','err');return;}
+  if(pw.length<6){toast('Password must be at least 6 characters','err');return;}
+  const users=getUsers();
+  if(users.find(u=>u.em.toLowerCase()===em.toLowerCase())){toast('Email already registered','err');return;}
+  regData={f,l,em,pw,pos};
+  G('reg-step1').style.display='none';
+  G('reg-step2').style.display='block';
+  G('step1-ind').className='step done'; G('step2-ind').className='step active';
+}
+
+function backToStep1(){ G('reg-step1').style.display='block'; G('reg-step2').style.display='none'; G('step1-ind').className='step active'; G('step2-ind').className='step'; }
+function backToStep2(){ G('reg-step2').style.display='block'; G('reg-step3').style.display='none'; G('step2-ind').className='step active'; G('step3-ind').className='step'; }
+
+function setDeptMode(mode){
+  G('new-dept-form').style.display=mode==='new'?'block':'none';
+  G('join-dept-form').style.display=mode==='join'?'block':'none';
+  G('btn-new-dept').className='btn '+(mode==='new'?'bp':'bs')+' bsm';
+  G('btn-join-dept').className='btn '+(mode==='join'?'bp':'bs')+' bsm';
+  G('btn-new-dept').style.flex='1'; G('btn-new-dept').style.fontSize='12px';
+  G('btn-join-dept').style.flex='1'; G('btn-join-dept').style.fontSize='12px';
+  // Chiefs must create dept, others should join
+  if(mode==='new' && !ADMIN_ROLES.includes(regData.pos)){
+    toast('Non-admin members should join an existing department with a code','warn');
+  }
+}
+
+function regCreateDept(){
+  const nm=G('dept-name').value.trim(),addr=G('dept-addr').value.trim();
+  if(!nm||!addr){toast('Department name and address required','err');return;}
+  const deptId='dept_'+Date.now();
+  regData.creatingDept=true; regData.deptId=deptId;
+  regData.newDept={id:deptId,name:nm,fdid:G('dept-fdid').value,est:G('dept-est').value,
+    type:G('dept-type').value,addr,ph:G('dept-ph').value,em:G('dept-em').value,
+    web:'',county:'',area:'',iso:'',desc:'',
+    chief:regData.f+' '+regData.l+' ('+regData.pos+')',
+    photo:null,joinCodes:[],
+    stations:[{id:1,nm:'Station 1 — Main',addr,app:'',pers:'',
+      ph:G('dept-ph').value,yr:G('dept-est').value,notes:'Headquarters'}]};
+  showRegSummary();
+}
+
+async function regJoinDept(){
+  const code=G('join-code').value.trim();
+  if(!code){toast('Enter a join code','err');return;}
+  // Look up dept by join code in Firestore
+  toast('Verifying code...','');
+  try{
+    const snap=await window.fbGetCol('depts');
+    let found=null;
+    snap.forEach(d=>{
+      const data=d.data();
+      if((data.joinCodes||[]).some(c=>c.code===code&&(!c.exp||c.exp>Date.now())))
+        found=data;
+    });
+    if(!found){toast('Invalid or expired code. Contact your admin.','err');return;}
+    regData.joiningDept=found; regData.deptId=found.id; regData.joinCode=code;
+    _cache['__depts']=[found];
+    G('join-dept-name').textContent=found.name;
+    G('join-dept-meta').textContent=(found.fdid||'')+(found.addr?' · '+found.addr:'');
+    G('join-dept-preview').style.display='block';
+  }catch(e){toast('Error verifying code: '+e.message,'err');}
+}
+
+function regStep3(){ showRegSummary(); }
+
+function showRegSummary(){
+  const dept=regData.newDept||regData.joiningDept||{name:'—'};
+  G('reg-name-preview').textContent=regData.f+' '+regData.l;
+  G('reg-role-preview').textContent=regData.pos.toUpperCase()+' · '+(ADMIN_ROLES.includes(regData.pos)?'FULL ACCESS':'STANDARD ACCESS');
+  G('reg-dept-preview').textContent=(regData.creatingDept?'Creating: ':'Joining: ')+dept.name;
+  G('reg-step2').style.display='none'; G('reg-step3').style.display='block';
+  G('step2-ind').className='step done'; G('step3-ind').className='step active';
+}
+
+async function finalRegister(){
+  try{
+    toast('Creating your account...','');
+
+    // Step 1: Create Firebase Auth account
+    const cred=await window.fbSignUp(regData.em, regData.pw);
+    const uid=cred.user.uid;
+    toast('Account created — saving your profile...','');
+
+    // Step 2: Save new department if creating one
+    if(regData.creatingDept&&regData.newDept){
+      await fbSaveDept(regData.newDept);
+      _cache['__depts']=[regData.newDept];
+    }
+
+    // Step 3: Save user profile to Firestore users collection
+    const newUser={
+      id:uid, f:regData.f, l:regData.l, em:regData.em, pos:regData.pos,
+      deptId:regData.deptId, badge:'', ph:'', yrs:'',
+      addr:'', ecn:'', ecp:'', photo:null
+    };
+    await fbSaveUser(newUser);
+
+    // Step 4: Save personnel record to dept sub-collection
+    // Must use explicit deptId — CU is not set yet during registration
+    const deptId=regData.deptId;
+    const persId=uid+'_p';
+    const persRec={
+      id:persId, f:regData.f, l:regData.l, em:regData.em,
+      pos:regData.pos, ph:'', badge:'', yrs:'', addr:'',
+      ecn:'', ecp:'', status:'Active', deptId
+    };
+    // Write directly to Firestore path — no CU dependency
+    await window.fbSetDoc(
+      `depts/${deptId}/personnel/${persId}`,
+      persRec, {merge:true}
+    );
+
+    // Step 5: Mark join code used
+    if(regData.joinCode){
+      try{
+        const deptDoc=await window.fbGetDoc(`depts/${deptId}`);
+        if(deptDoc.exists()){
+          const deptData=deptDoc.data();
+          const codes=(deptData.joinCodes||[]).map(c=>
+            c.code===regData.joinCode ? {...c,used:true,usedBy:uid} : c
+          );
+          await window.fbSetDoc(`depts/${deptId}`,{joinCodes:codes},{merge:true});
+        }
+      }catch(e){ console.warn('Code mark error',e); }
+    }
+
+    toast('Profile saved — loading your department...','');
+
+    // Step 6: Login — loadAllDeptData will now find the personnel record
+    await loginAs(newUser);
+
+  }catch(err){
+    console.error('Registration error:',err);
+    if(err.code==='auth/email-already-in-use')
+      toast('That email is already registered — sign in instead','err');
+    else toast('Registration error: '+err.message,'err');
+  }
+}
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+async function doLogin(){
+  const em=G('le').value.trim(), pw=G('lp').value;
+  if(!em){toast('Enter your email','err');return;}
+  if(!pw){toast('Enter your password','err');return;}
+  const loginBtn=document.querySelector('#tp-in .btn.bp');
+  if(loginBtn){loginBtn.textContent='Signing in...';loginBtn.disabled=true;}
+  try{
+    const cred=await window.fbSignIn(em,pw);
+    let userData=await fbLoadUser(cred.user.uid);
+    if(!userData){
+      // Auth account exists but Firestore profile missing — create it now
+      // This fixes members whose profile save failed during registration
+      userData={id:cred.user.uid,f:em.split('@')[0],l:'',em:em,
+        pos:'Firefighter',deptId:'',badge:'',ph:'',yrs:'',
+        addr:'',ecn:'',ecp:'',photo:null};
+      toast('Account found — please complete your profile','warn');
+      // We can't log them in without a deptId — show helpful message
+      toast('Account setup incomplete. Ask your admin to add you manually in Personnel, or re-register.','err');
+      await window.fbSignOut();
+      if(loginBtn){loginBtn.textContent='🔐 Sign In';loginBtn.disabled=false;}
+      return;
+    }
+    await loginAs(userData);
+  }catch(err){
+    if(loginBtn){loginBtn.textContent='🔐 Sign In';loginBtn.disabled=false;}
+    if(err.code==='auth/invalid-credential'||err.code==='auth/wrong-password'||err.code==='auth/user-not-found')
+      toast('Incorrect email or password','err');
+    else toast('Sign in error: '+err.message,'err');
+  }
+}
+
+async function loginAs(userData){
+  CU={...userData, isAdmin:ADMIN_ROLES.includes(userData.pos)};
+  toast('Loading your department...','');
+  try{
+    const dept=await fbLoadDept(CU.deptId);
+    _cache['__depts']=dept?[dept]:[];
+    await loadAllDeptData();
+    enterApp();
+  }catch(e){
+    toast('Error loading department: '+e.message,'err');
+  }
+}
+
+function enterApp(){
+  try{
+    syncSidebar(); applyPerms(); renderAll(); startClock();
+    showScreen('sa'); toast('Welcome, '+CU.f+'!','ok');
+    setTimeout(geocodeMissingIncidents, 1500);
+  }catch(err){
+    console.error('enterApp error:',err);
+    toast('Error loading app: '+err.message,'err');
+  }
+}
+
+async function geocodeMissingIncidents(){
+  const all=_cache['incidents']||[];
+  const missing=all.filter(r=>r.deptId===CU.deptId&&r.addr&&(!r.lat||!r.lng));
+  if(!missing.length) return;
+  for(const r of missing){
+    const res=await geocodeAddress(r.addr);
+    if(res){ r.lat=res.lat; r.lng=res.lng; upsertRecord('incidents',r); }
+    await new Promise(res=>setTimeout(res,400));
+  }
+  if(leafletMap) refreshMap(); rInc();
+}
+
+async function regeocodeAll(){
+  toast('Re-pinning all addresses...','');
+  const all=_cache['incidents']||[];
+  const mine=all.filter(r=>r.deptId===CU.deptId&&r.addr);
+  let updated=0;
+  for(const r of mine){
+    const res=await geocodeAddress(r.addr);
+    if(res){ r.lat=res.lat; r.lng=res.lng; upsertRecord('incidents',r); updated++; }
+    await new Promise(res=>setTimeout(res,400));
+  }
+  if(leafletMap) refreshMap(); rInc();
+  toast(`Re-pinned ${updated} of ${mine.length} incidents`,'ok');
+}
+
+
+function doLogout(){
+  CU=null; _cache.__depts=[];
+  if(leafletMap){leafletMap.remove();leafletMap=null;}
+  window.fbSignOut().catch(()=>{});
+  showScreen('sl');
+}
+
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on')); G(id).classList.add('on'); }
+
+function syncSidebar(){
+  const dept=getDept(CU.deptId)||{name:'Unknown Dept'};
+  G('sbnm').textContent=CU.f+' '+CU.l;
+  G('sbrole').textContent=CU.pos.toUpperCase()+(CU.isAdmin?' · ADMIN':' · MEMBER');
+  G('sbav').textContent=(CU.f[0]+CU.l[0]).toUpperCase();
+  G('sbdept').textContent=dept.name;
+  // Show user photo if set
+  if(CU.photo){ G('sbav').style.backgroundImage=`url(${CU.photo})`; G('sbav').style.backgroundSize='cover'; G('sbav').textContent=''; }
+}
+
+function applyPerms(){
+  const a=CU.isAdmin;
+  [
+    {act:'inc-act',note:'inc-note',lbl:'+ File New Report',m:'mo-inc'},
+    {act:'drone-act',note:'drone-note',lbl:'+ New Drone Report',m:'mo-drone'},
+    {act:'min-act',note:'min-note',lbl:'+ Add Minutes',m:'mo-min'},
+    {act:'evt-act',note:'evt-note',lbl:'+ Add Event',m:'mo-evt'},
+    {act:'equip-act',note:'equip-note',lbl:'+ Add Equipment',m:'mo-equip'},
+    {act:'maint-act',note:'maint-note',lbl:'+ Log Maintenance',m:'mo-maint'},
+    {act:'pers-act',note:'pers-note',lbl:'+ Add Member',m:'mo-pers'},
+    {act:'fr-act',note:'fr-note',lbl:'+ New Fundraiser',m:'mo-fr'},
+    {act:'gr-act',note:'gr-note',lbl:'+ Add Grant',m:'mo-gr'},
+  ].forEach(s=>{
+    G(s.act).innerHTML=a?`<button class="btn bp bsm" onclick="openNew('${s.m}')">${s.lbl}</button>`:'';
+    const n=G(s.note); if(n) n.style.display=a?'none':'flex';
+  });
+  G('deptpro-act').innerHTML=a?`<button class="btn bs bsm" onclick="openDeptEdit()">✏ ${T('editProfile')}</button>`:'';
+  G('joincode-section').style.display=a?'block':'none';
+  G('station-act').innerHTML=a?`<button class="btn bp bsm" onclick="openNew('mo-station')">+ ${T('addStation')}</button>`:'';
+  const mat=G('map-admin-tools'); if(mat) mat.style.display=a?'flex':'none';
+
+  // Finance — admin only
+  const finLock=G('fin-locked'); if(finLock) finLock.style.display=a?'none':'block';
+  const finCont=G('fin-content'); if(finCont) finCont.style.display=a?'block':'none';
+  G('fin-act').innerHTML=a?`<button class="btn bp bsm" onclick="openNew('mo-fin')">+ Add Transaction</button>`:'';
+
+  // Role field
+  const pp=G('ppos'); if(pp){pp.disabled=!a;pp.style.opacity=a?'1':'.5';pp.style.cursor=a?'pointer':'not-allowed';}
+  G('prolenote').style.display=a?'block':'none';
+
+  loadUserPro();
+}
+
+// ═══════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════
+let clockStarted=false;
+function startClock(){
+  if(clockStarted) return;
+  clockStarted=true;
+  function tick(){
+    const n=new Date();
+    const h=String(n.getHours()).padStart(2,'0'),m=String(n.getMinutes()).padStart(2,'0'),s=String(n.getSeconds()).padStart(2,'0');
+    const c=G('clk'); if(c) c.textContent=h+':'+m+':'+s;
+    const cd=G('clkdate'); if(cd) cd.textContent=MOS[n.getMonth()].toUpperCase()+' '+n.getDate()+', '+n.getFullYear();
+    const dy=G('clkday'); if(dy) dy.textContent=DAYNAMES[n.getDay()];
+    const ds=G('datesub'); if(ds) ds.textContent=DAYNAMES[n.getDay()]+' · '+MONSFULL[n.getMonth()]+' '+n.getDate()+' · '+n.getFullYear();
+  }
+  tick(); setInterval(tick,1000);
+}
+
+// ═══════════════════════════════════════════
+// GEOCODING — Multiple fallbacks for reliability
+// ═══════════════════════════════════════════
+async function geocodeAddress(addr){
+  if(!addr||addr.trim().length<5) return null;
+  const q=encodeURIComponent(addr.trim());
+
+  // Nominatim — no forbidden headers, just Accept-Language is safe
+  try{
+    const r=await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=3&addressdetails=1`,
+      {headers:{'Accept-Language':'en'}}
+    );
+    if(r.ok){
+      const d=await r.json();
+      if(d&&d.length){
+        return {lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon),display:d[0].display_name};
+      }
+    }
+  }catch(e){ console.warn('Nominatim error:',e); }
+
+  // Fallback: Photon (no auth needed, CORS open)
+  try{
+    const r=await fetch(`https://photon.komoot.io/api/?q=${q}&limit=1`);
+    if(r.ok){
+      const d=await r.json();
+      if(d&&d.features&&d.features.length){
+        const f=d.features[0];
+        const parts=[f.properties.name,f.properties.street,f.properties.city,f.properties.country].filter(Boolean);
+        return {lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0],display:parts.join(', ')};
+      }
+    }
+  }catch(e){ console.warn('Photon error:',e); }
+
+  return null;
+}
+
+let geocodeTimeout=null;
+async function geocodePreview(immediate){
+  const addr=G('inc-addr')?.value||'';
+  clearTimeout(geocodeTimeout);
+  const st=G('geocode-status'); if(!st) return;
+  if(addr.length<5){ st.textContent=''; return; }
+  const run=async()=>{
+    st.textContent='⏳ '+T('locating'); st.style.color='var(--txtm)';
+    const result=await geocodeAddress(addr);
+    if(result){
+      G('inc-lat').value=result.lat; G('inc-lng').value=result.lng;
+      st.textContent='📍 '+T('located')+': '+(result.display||'').split(',').slice(0,4).join(', ');
+      st.style.color='var(--grn)';
+    }else{
+      G('inc-lat').value=''; G('inc-lng').value='';
+      st.textContent='⚠ '+T('addressNotFound')+' — try: 123 Main St, City, State';
+      st.style.color='var(--amb)';
+    }
+  };
+  if(immediate) await run();
+  else geocodeTimeout=setTimeout(run,700);
+}
+
+// ═══════════════════════════════════════════
+// MAP — Leaflet + OpenStreetMap + pin placement
+// ═══════════════════════════════════════════
+const INC_COLORS={'Structure Fire':'#ff4500','Vehicle Fire':'#ffb300','Medical':'#2979ff','Wildland Fire':'#aa00ff','Hazmat':'#aa00ff','Rescue':'#ff6a00','Other':'#555568'};
+let placeModeActive=false, placeStationId=null;
+
+let incPlaceModeActive=false, incPlaceId=null;
+
+function initMap(){
+  if(leafletMap) return;
+  if(typeof L==='undefined'){ console.warn('Leaflet not loaded'); return; }
+  const mapEl=document.getElementById('leaflet-map');
+  if(!mapEl||mapEl.offsetParent===null) return;
+  leafletMap=L.map('leaflet-map',{zoomControl:true}).setView([39.5,-98.35],4);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors',maxZoom:19
+  }).addTo(leafletMap);
+
+  leafletMap.on('click',async function(e){
+    const {lat,lng}=e.latlng;
+    // Station placement
+    if(placeModeActive&&placeStationId){
+      const depts=getDepts(); const dept=depts.find(d=>d.id===CU.deptId);
+      if(dept&&dept.stations){const st=dept.stations.find(s=>s.id===placeStationId);if(st){st.lat=lat;st.lng=lng;saveDepts(depts);}}
+      cancelPlaceMode(); refreshMap(); rStations(); toast('Station pin placed!','ok');
+      return;
+    }
+    // Incident pin-drop
+    if(incPlaceModeActive&&incPlaceId){
+      const all=_cache['incidents']||[];
+      const idx=all.findIndex(x=>x.id===incPlaceId);
+      if(idx>=0){ all[idx].lat=lat; all[idx].lng=lng; upsertRecord('incidents',all[idx]); }
+      cancelIncPlaceMode(); refreshMap(); rInc(); toast('Incident pin moved!','ok');
+    }
+  });
+
+  refreshMap();
+}
+
+function cancelIncPlaceMode(){
+  incPlaceModeActive=false; incPlaceId=null;
+  G('map-toolbar').style.display='none';
+  const mapEl=G('leaflet-map'); if(mapEl) mapEl.classList.remove('place-mode');
+}
+
+function dropIncPin(id){
+  if(!leafletMap){ toast('Open the map page first','warn'); return; }
+  incPlaceModeActive=true; incPlaceId=id;
+  G('place-station-select').style.display='none';
+  G('map-toolbar').style.display='flex';
+  G('place-hint-text').textContent='📍 Click the map to move this incident pin';
+  G('leaflet-map').classList.add('place-mode');
+}
+
+function startPlaceMode(){
+  if(!CU.isAdmin){toast('Full access required','err');return;}
+  const dept=getDept(CU.deptId)||{};const stations=dept.stations||[];
+  if(!stations.length){toast('Add a station first','warn');return;}
+  const sel=G('place-station-select');
+  sel.style.display='';
+  sel.innerHTML=stations.map(s=>`<option value="${s.id}">${s.nm}${s.lat?' ✓':' (no pin)'}</option>`).join('');
+  G('map-toolbar').style.display='flex';
+  G('place-hint-text').textContent=T('pinHint');
+  placeModeActive=true; placeStationId=+sel.value;
+  sel.onchange=()=>{placeStationId=+sel.value;};
+  G('leaflet-map').classList.add('place-mode');
+}
+
+function cancelPlaceMode(){
+  placeModeActive=false; placeStationId=null;
+  G('map-toolbar').style.display='none';
+  G('leaflet-map').classList.remove('place-mode');
+}
+
+function refreshMap(){
+  if(!leafletMap) return;
+  mapMarkers.forEach(m=>m.remove()); mapMarkers=[];
+  const typeFilter=G('map-flt-type')?.value||'';
+  const incidents=getDeptData('incidents').filter(r=>!typeFilter||r.type===typeFilter);
+  const dept=getDept(CU.deptId)||{};
+  const stations=dept.stations||[];
+  const bounds=[];
+
+  // ── Station markers ──
+  stations.forEach(st=>{
+    if(!st.lat||!st.lng) return;
+    const icon=L.divIcon({
+      className:'',
+      html:`<div style="background:#0d1a0d;border:3px solid #00e676;border-radius:6px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 3px 14px rgba(0,230,118,.6)">🏠</div>`,
+      iconSize:[36,36],
+      iconAnchor:[18,18]  // center of the square
+    });
+    const m=L.marker([st.lat,st.lng],{icon, draggable:!!CU.isAdmin}).addTo(leafletMap);
+    m.bindPopup(`<div class="popup-type" style="color:#00e676">🏠 FIRE STATION</div><div class="popup-addr"><strong>${st.nm}</strong></div><div class="popup-date">${st.addr||''}</div>${st.app?`<div class="popup-date">🚒 ${st.app}</div>`:''}${CU.isAdmin?'<div class="popup-date" style="color:var(--amb);margin-top:6px">⇧ Drag to move</div>':''}`);
+    if(CU.isAdmin){
+      m.on('dragend',function(e){
+        const {lat,lng}=e.target.getLatLng();
+        const depts=getDepts(); const d=depts.find(x=>x.id===CU.deptId);
+        if(d&&d.stations){const s=d.stations.find(x=>x.id===st.id);if(s){s.lat=lat;s.lng=lng;saveDepts(depts);}}
+        toast('Station pin moved & saved','ok');
+      });
+    }
+    mapMarkers.push(m); bounds.push([st.lat,st.lng]);
+  });
+
+  // ── Incident markers ──
+  const emojiMap={'Structure Fire':'🔥','Vehicle Fire':'🚗','Medical':'🏥','Wildland Fire':'🌲','Hazmat':'☢️','Rescue':'🚨','Other':'📍'};
+  const allInc=_cache['incidents']||[];
+
+  incidents.forEach(r=>{
+    if(!r.lat||!r.lng) return;
+    const color=INC_COLORS[r.type]||'#555568';
+    const emoji=emojiMap[r.type]||'📍';
+    // Teardrop pin shape: circle on top of a point
+    const icon=L.divIcon({
+      className:'',
+      html:`<div style="position:relative;width:36px;height:44px">
+        <div style="position:absolute;top:0;left:0;width:36px;height:36px;background:#0a0a0c;border:3px solid ${color};border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 10px ${color}99">${emoji}</div>
+        <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:10px solid ${color}"></div>
+      </div>`,
+      iconSize:[36,44],
+      iconAnchor:[18,44]  // tip of the teardrop
+    });
+    const m=L.marker([r.lat,r.lng],{icon, draggable:!!CU.isAdmin}).addTo(leafletMap);
+    m.bindPopup(`<div class="popup-type" style="color:${color}">${(r.type||'').toUpperCase()}</div><div class="popup-addr"><strong>${r.addr}</strong></div><div class="popup-date">📅 ${r.date}${r.time?' · '+r.time:''}</div><div class="popup-date">${r.inj||''}</div>${r.desc?`<div class="popup-date" style="color:var(--txt2);margin-top:4px">${r.desc}</div>`:''}<div class="popup-date" style="color:var(--txtm);font-size:10px;margin-top:4px">Report: ${r.num}</div>${CU.isAdmin?'<div class="popup-date" style="color:var(--amb);margin-top:6px">⇧ Drag to correct position</div>':''}`);
+    if(CU.isAdmin){
+      m.on('dragend',function(e){
+        const {lat,lng}=e.target.getLatLng();
+        const idx=allInc.findIndex(x=>x.id===r.id);
+        if(idx>=0){allInc[idx].lat=lat;allInc[idx].lng=lng;upsertRecord('incidents',allInc[idx]);}
+        toast('Incident pin moved & saved','ok');
+      });
+    }
+    mapMarkers.push(m); bounds.push([r.lat,r.lng]);
+  });
+
+  if(bounds.length>1){try{leafletMap.fitBounds(bounds,{padding:[50,50],maxZoom:15});}catch(e){}}
+  else if(bounds.length===1){leafletMap.setView(bounds[0],14);}
+  else if(!bounds.length){
+    // No pins yet — center on department address if we can
+    const dept2=getDept(CU.deptId)||{};
+    if(dept2.addr) geocodeAddress(dept2.addr).then(r=>{if(r&&leafletMap)leafletMap.setView([r.lat,r.lng],13);});
+  }
+}
+
+async function geocodeStation(station){
+  if(station.addr&&!station.lat){const r=await geocodeAddress(station.addr);if(r){station.lat=r.lat;station.lng=r.lng;}}
+}
+
+
+
+// ═══════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════
+function renderAll(){
+  rInc(); rDrone(); rMin(); rEvt(); rEquip(); rMaint(); rPers();
+  rFin(); rFr(); rGr(); rDeptPro(); rDashActivity(); rDashEvts(); rDashMaint();
+  updateDashStats();
+  if(leafletMap && typeof L !== 'undefined') setTimeout(refreshMap,300);
+}
+
+function updateDashStats(){
+  const incs=getDeptData('incidents'); const drones=getDeptData('drones');
+  const pers=getDeptData('personnel').filter(p=>p.status==='Active');
+  const grants=getDeptData('grants').filter(g=>g.status==='In Progress'||g.status==='Submitted');
+  G('dash-inc').textContent=incs.length; G('stat-drone').textContent=drones.length;
+  G('dash-eq').textContent=getDeptData('equipment').length; G('dash-mbr').textContent=pers.length;
+  G('dash-gr').textContent=grants.length; G('stat-min').textContent=getDeptData('minutes').length;
+  G('dstat-fl').textContent=drones.length;
+  const tm=drones.reduce((a,d)=>a+(+d.dur||0),0); G('dstat-hr').textContent=(tm/60).toFixed(1);
+  G('dstat-fleet').textContent=getDeptData('equipment').filter(e=>e.type==='Drone').length;
+  G('dp-inc-cnt').textContent=incs.length; G('dp-mbrs').textContent=pers.length;
+  const dept=getDept(CU.deptId)||{};
+  G('dp-st-cnt').textContent=(dept.stations||[]).length;
+  G('dp-eq-cnt').textContent=getDeptData('equipment').filter(e=>e.type==='Apparatus').length;
+}
+
+// ═══ BADGE HELPERS ═══
+function bT(t){const m={'Structure Fire':'bf','Vehicle Fire':'ba','Wildland Fire':'bpu','Medical':'bb','Hazmat':'bpu','Rescue':'ba','Apparatus':'bf','SCBA':'ba','Tool':'bgr','PPE':'bgr','Drone':'bt','Communication':'bgr','Event':'ba','Drive':'bb','Online Campaign':'bgr','Sale':'bgr','Federal':'bb','State':'bgn','Local':'ba','Private':'bgr','Meeting':'bb','Training':'bgn','Fundraiser':'ba','Community':'bpu','Business':'bb','Incident Recon':'bf','Wildland Survey':'bgn','Search & Rescue':'ba','Training Flight':'bb','Damage Assessment':'ba','Routine Inspection':'bgr','Other':'bgr'};return`<span class="badge ${m[t]||'bgr'}">${t}</span>`;}
+function bS(s){const m={Draft:'ba',Submitted:'ba',Filed:'bgn',Active:'ba',Planned:'bb',Upcoming:'bb',Completed:'bgn',Confirmed:'bgn',Reviewed:'bgn',Cancelled:'br','In Progress':'bb',Awarded:'bgn',Denied:'br',Researching:'bgr',Closed:'bgr',Income:'bgn',Expense:'br',Service:'bgn',Repair:'br','Routine Inspection':'bb',Testing:'bb',Replacement:'ba',Other:'bgr'};return`<span class="badge ${m[s]||'bgr'}">${s}</span>`;}
+function bC(c){const m={Excellent:'bgn',Good:'bgn',Fair:'ba',Poor:'br','Out of Service':'br'};return`<span class="badge ${m[c]||'bgr'}">${c}</span>`;}
+function $m(n){return n>0?'$'+Number(n).toLocaleString():'—';}
+function eb(fn,lbl='✏ Edit'){return CU&&CU.isAdmin?`<button class="btn be bxs" onclick="${fn}">${lbl}</button>`:'';}
+
+function rInc(){
+  const s=G('inc-srch')?.value.toLowerCase()||'',f=G('inc-flt')?.value||'';
+  const list=getDeptData('incidents').filter(r=>{if(f&&r.type!==f)return false;if(s&&!r.addr?.toLowerCase().includes(s)&&!r.num?.toLowerCase().includes(s)&&!r.desc?.toLowerCase().includes(s))return false;return true;});
+  const colors={'Structure Fire':'rgba(255,69,0,.12)','Vehicle Fire':'rgba(255,179,0,.1)','Medical':'rgba(41,121,255,.12)','Wildland Fire':'rgba(170,0,255,.1)','Hazmat':'rgba(170,0,255,.1)','Rescue':'rgba(255,106,0,.12)','Other':'rgba(255,255,255,.04)'};
+  const icons={'Structure Fire':'🔥','Vehicle Fire':'🚗','Medical':'🏥','Wildland Fire':'🌲','Hazmat':'☢️','Rescue':'🚨','Other':'📋'};
+  G('inc-list').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('inc-${r.id}')">
+      <div class="mctypeicon" style="background:${colors[r.type]||'rgba(255,255,255,.04)'}">${icons[r.type]||'📋'}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.addr}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">
+          <span style="color:var(--fire)">${r.num}</span> · ${bT(r.type)} · ${r.date}${r.time?' at '+r.time:''} · ${bS(r.status)}
+        </div>
+      </div>
+      ${r.lat?'<span title="On map" style="color:var(--grn);font-size:14px;margin-right:4px">📍</span>':'<span title="No map pin" style="color:var(--amb);font-size:14px;margin-right:4px">⚠</span>'}
+      <span style="color:var(--txtm);font-size:16px" id="arr-inc-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="inc-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">FILED BY</span><br>${r.filed}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">UNITS</span><br>${r.units} unit${r.units!=1?'s':''}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">INJURIES</span><br>${r.inj}</div>
+        <div style="grid-column:span 3"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">LOCATION</span><br>${r.addr}</div>
+      </div>
+      <div style="height:1px;background:var(--bdr);margin:5px 0"></div>
+      <div class="mctext">${(r.desc||'No narrative entered.').replace(/\n/g,'<br>')}</div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr);flex-wrap:wrap;align-items:center">
+        ${CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eInc(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('incidents',${r.id})">🗑</button>
+        <button class="btn bs bsm" onclick="go('map',document.querySelector('[onclick*=\\\"go(\\\\u0027map\\\"]'));setTimeout(()=>dropIncPin(${r.id}),500)">🗺 Move Pin</button>`:''}
+        <button class="btn bg bsm" style="margin-left:auto" onclick="window.print()">🖨 Print</button>
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO INCIDENTS ON FILE</div>`;
+}
+
+function rDrone(){
+  const s=G('drone-srch')?.value.toLowerCase()||'',f=G('drone-flt')?.value||'';
+  const list=getDeptData('drones').filter(r=>{if(f&&r.mission!==f)return false;if(s&&!r.loc?.toLowerCase().includes(s)&&!r.num?.toLowerCase().includes(s)&&!r.pilot?.toLowerCase().includes(s))return false;return true;});
+  const mcolors={'Incident Recon':'rgba(255,69,0,.12)','Wildland Survey':'rgba(0,230,118,.1)','Search & Rescue':'rgba(255,179,0,.1)','Training Flight':'rgba(41,121,255,.12)','Damage Assessment':'rgba(170,0,255,.1)','Routine Inspection':'rgba(0,188,212,.1)','Other':'rgba(255,255,255,.04)'};
+  G('drone-list').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('drone-${r.id}')">
+      <div class="mctypeicon" style="background:${mcolors[r.mission]||'rgba(0,188,212,.1)'}">🚁</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.loc||'Flight '+r.num}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">
+          <span style="color:var(--tel)">${r.num}</span> · ${bT(r.mission)} · ${r.date} · ${r.dur} min · ${bS(r.status)}
+        </div>
+      </div>
+      <span style="color:var(--txtm);font-size:16px" id="arr-drone-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="drone-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">PILOT (PIC)</span><br>${r.pilot}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">OBSERVER</span><br>${r.obs||'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">DRONE UNIT</span><br>${r.unit}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">TAKEOFF</span><br>${r.toff||'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">LANDING</span><br>${r.land||'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">MAX ALTITUDE</span><br>${r.alt?r.alt+' ft':'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">WEATHER</span><br>${r.wx||'—'}</div>
+        <div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">LOCATION / INCIDENT</span><br>${r.loc||'—'}</div>
+      </div>
+      <div style="height:1px;background:var(--bdr);margin:5px 0"></div>
+      ${r.sum?`<div style="margin-bottom:6px"><div style="font-family:var(--fm);font-size:10px;letter-spacing:1px;color:var(--txtm);margin-bottom:4px">MISSION SUMMARY</div><div class="mctext">${r.sum.replace(/\n/g,'<br>')}</div></div>`:''}
+      ${r.find?`<div><div style="font-family:var(--fm);font-size:10px;letter-spacing:1px;color:var(--txtm);margin-bottom:4px">FINDINGS / RECOMMENDATIONS</div><div class="mctext">${r.find.replace(/\n/g,'<br>')}</div></div>`:''}
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eDrone(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('drones',${r.id})">🗑</button>`:''}
+        <button class="btn bg bsm" style="margin-left:auto" onclick="window.print()">🖨 Print</button>
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO DRONE REPORTS ON FILE</div>`;
+}
+
+function togCard(id){const b=G(id),a=G('arr-'+id);if(!b)return;b.classList.toggle('on');a.textContent=b.classList.contains('on')?'▼':'▶';}
+
+
+
+function rMin(){
+  const s=G('min-srch')?.value.toLowerCase()||'',f=G('min-flt')?.value||'';
+  const list=getDeptData('minutes').filter(r=>{if(f&&r.type!==f)return false;if(s&&!r.subj?.toLowerCase().includes(s))return false;return true;});
+  const icons={Business:'📋',Training:'🎓',Other:'📌'};
+  const colors={Business:'rgba(41,121,255,.12)',Training:'rgba(0,230,118,.1)',Other:'rgba(170,0,255,.1)'};
+  G('min-list').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togMin(${r.id})">
+      <div class="mctypeicon" style="background:${colors[r.type]||'rgba(255,255,255,.05)'}">${icons[r.type]||'📌'}</div>
+      <div style="flex:1"><div style="font-weight:700;font-size:14px">${r.subj}</div>
+      <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">${bT(r.type)} · ${r.date} at ${r.time} · ${r.loc}</div></div>
+      <span style="color:var(--txtm);font-size:16px;margin-left:8px" id="marr-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="mbdy-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">CALLED BY</span><br>${r.called}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">ADJOURNED</span><br>${r.adj||'—'}</div>
+        <div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">PRESENT</span><br>${r.pres}</div>
+        ${r.abs?`<div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">ABSENT</span><br>${r.abs}</div>`:''}
+      </div>
+      <div style="height:1px;background:var(--bdr);margin:5px 0"></div>
+      <div class="mctext">${r.body}</div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eMin(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('minutes',${r.id})">🗑</button>`:''}
+        <button class="btn bg bsm" style="margin-left:auto" onclick="window.print()">🖨</button>
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO MINUTES ON FILE</div>`;}
+
+function togMin(id){const b=G('mbdy-'+id),a=G('marr-'+id);b.classList.toggle('on');a.textContent=b.classList.contains('on')?'▼':'▶';}
+
+function rEvt(){
+  const s=G('evt-srch')?.value.toLowerCase()||'',f=G('evt-flt')?.value||'';
+  const list=getDeptData('events').filter(r=>{if(f&&r.type!==f)return false;if(s&&!r.nm?.toLowerCase().includes(s))return false;return true;}).sort((a,b)=>a.date.localeCompare(b.date));
+  const fmt=t=>{if(!t)return'';const[h,m]=t.split(':');const hh=+h;return`${hh>12?hh-12:hh||12}:${m} ${hh>=12?'PM':'AM'}`;};
+  G('evt-list').innerHTML=list.length?list.map(r=>{
+    const d=new Date(r.date+'T12:00:00');
+    return`<div class="ecard">
+      <div class="edb"><div class="edmo">${MOS[d.getMonth()].toUpperCase()}</div><div class="edday">${d.getDate()}</div></div>
+      <div style="flex:1"><div style="font-weight:700;font-size:14px">${r.nm}</div>
+      <div style="font-size:12px;color:var(--txt2);margin-top:2px">🕐 ${fmt(r.time)} · 📍 ${r.loc}</div>
+      <div style="font-size:12px;color:var(--txtm);margin-top:4px">${r.desc}</div>
+      <div style="display:flex;gap:7px;margin-top:6px;flex-wrap:wrap;align-items:center">${bT(r.type)} ${bS(r.status)} <span style="font-size:11px;color:var(--txtm)">Contact: ${r.con}</span></div></div>
+      ${CU&&CU.isAdmin?`<div style="flex-shrink:0">${eb(`eEvt(${r.id})`)}</div>`:''}
+    </div>`;}).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO UPCOMING EVENTS</div>`;}
+
+function rEquip(){G('equip-tb').innerHTML=(getDeptData('equipment')||[]).map(r=>`<tr>
+  <td><strong>${r.nm}</strong></td><td>${bT(r.type)}</td>
+  <td style="font-family:var(--fm);font-size:11px">${r.yr||'—'} · ${r.ser||'—'}</td>
+  <td>${bC(r.cond)}</td><td>${r.asgn||'—'}</td>
+  <td style="color:${r.cond==='Fair'||r.cond==='Poor'?'var(--red)':'inherit'}">${r.svc||'—'}</td>
+  <td><div class="ac">${eb(`eEquip(${r.id})`)}</div></td>
+</tr>`).join('')||`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO EQUIPMENT ON FILE</td></tr>`;}
+
+function rMaint(){G('maint-tb').innerHTML=(getDeptData('maintenance')||[]).map(r=>`<tr>
+  <td><strong>${r.equip}</strong></td><td>${bS(r.type)}</td><td>${r.date}</td>
+  <td>${r.ven||'—'}</td><td style="font-family:var(--fm)">${$m(r.cost)}</td><td>${r.next||'—'}</td>
+  <td><div class="ac">${eb(`eMaint(${r.id})`)}</div></td>
+</tr>`).join('')||`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO MAINTENANCE RECORDS</td></tr>`;}
+
+function rPers(){G('pers-grid').innerHTML=(getDeptData('personnel')||[]).map(r=>{
+  const isA=ADMIN_ROLES.includes(r.pos);
+  return`<div class="pcard">
+    <div class="pav">${r.f[0]}${r.l[0]}</div>
+    <div style="flex:1"><div style="font-weight:700;font-size:13px">${r.f} ${r.l}</div>
+    <div style="font-family:var(--fm);font-size:11px;color:var(--fire);letter-spacing:1px;margin-top:2px">${isA?'⭐ ':''}${r.pos}</div>
+    <div style="font-size:11px;color:var(--txtm);margin-top:2px">${isA?'Full Access':'Member'} · ${r.status}</div>
+    <div style="font-size:11px;color:var(--txtm);margin-top:1px">${r.em}</div></div>
+    ${CU&&CU.isAdmin?`<div class="pac">${eb(`ePers(${r.id})`)}</div>`:''}
+  </div>`;}).join('')||`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px;grid-column:span 3">NO PERSONNEL — Add members or invite with join codes</div>`;}
+
+function rFin(){
+  if(!CU.isAdmin) return;
+  const list=getDeptData('finance');
+  const income=list.filter(r=>r.type==='Income').reduce((a,r)=>a+(+r.amt||0),0);
+  const expense=list.filter(r=>r.type==='Expense').reduce((a,r)=>a+(+r.amt||0),0);
+  G('fin-tot-in').textContent='$'+income.toLocaleString();
+  G('fin-tot-ex').textContent='$'+expense.toLocaleString();
+  const net=income-expense;
+  G('fin-net').textContent=(net>=0?'$':'-$')+Math.abs(net).toLocaleString();
+  G('fin-tb').innerHTML=list.map(r=>`<tr>
+    <td>${r.date}</td>
+    <td>${r.desc}${r.srcType?`<span style="font-family:var(--fm);font-size:9px;color:var(--txtm);border:1px solid var(--bdr);border-radius:2px;padding:1px 5px;margin-left:6px">AUTO · ${r.srcType.toUpperCase()}</span>`:''}</td>
+    <td><span class="badge bgr">${r.cat}</span></td>
+    <td>${bS(r.type)}</td>
+    <td style="font-family:var(--fm);color:${r.type==='Income'?'var(--grn)':'var(--red)'}">${r.type==='Income'?'+':'-'}${$m(r.amt)}</td>
+    <td><div class="ac">${r.srcType?`<span style="font-family:var(--fm);font-size:10px;color:var(--txtm)" title="Auto-generated — edit the source ${r.srcType}">🔗 Auto</span>`:eb(`eFin(${r.id})`)}</div></td>
+  </tr>`).join('')||`<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO TRANSACTIONS</td></tr>`;}
+
+function rFr(){G('fr-tb').innerHTML=(getDeptData('fundraisers')||[]).map(r=>`<tr>
+  <td><strong>${r.nm}</strong></td><td>${bT(r.type)}</td><td>${r.date}</td>
+  <td style="font-family:var(--fm)">${$m(r.goal)}</td>
+  <td style="font-family:var(--fm);color:${r.raised>0?'var(--grn)':'var(--txtm)'}">${r.raised>0?$m(r.raised):'—'}</td>
+  <td style="font-family:var(--fm);color:${(r.raised-r.exp)>0?'var(--grn)':'var(--txtm)'}">${r.raised>0?$m(r.raised-r.exp):'—'}</td>
+  <td>${bS(r.status)}</td><td><div class="ac">${eb(`eFr(${r.id})`)}</div></td>
+</tr>`).join('')||`<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO FUNDRAISERS</td></tr>`;}
+
+function rGr(){G('gr-tb').innerHTML=(getDeptData('grants')||[]).map(r=>`<tr>
+  <td><strong>${r.nm}</strong></td><td>${r.org}</td>
+  <td style="font-family:var(--fm)">${$m(r.req)}</td>
+  <td style="font-family:var(--fm);color:${r.award>0?'var(--grn)':r.status==='Denied'?'var(--red)':'var(--txtm)'}">${r.award>0?$m(r.award):r.status==='Denied'?'Denied':'Pending'}</td>
+  <td>${r.dead||'—'}</td><td>${bS(r.status)}</td>
+  <td><div class="ac">${eb(`eGr(${r.id})`)}</div></td>
+</tr>`).join('')||`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO GRANTS</td></tr>`;}
+
+function rDashActivity(){
+  const incs=getDeptData('incidents').slice(0,3);
+  const html=incs.map(r=>`<div class="aitem"><div class="aicon af">${r.type==='Medical'?'🏥':'🔥'}</div><div><div class="atxt"><strong>${r.type}</strong> at ${r.addr}</div><div class="atim">${r.date} · ${r.time||''}</div></div></div>`).join('');
+  G('dash-activity').innerHTML=html||`<div style="padding:20px;text-align:center;color:var(--txtm);font-size:12px">No activity yet</div>`;}
+
+function rDashEvts(){
+  const list=getDeptData('events').sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
+  G('dash-evts').innerHTML=list.map(r=>{const d=new Date(r.date+'T12:00:00');
+    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bdr)">
+      <div style="background:var(--elev);border:1px solid var(--bdr);border-radius:3px;padding:3px 7px;text-align:center;min-width:42px"><div style="font-family:var(--fm);font-size:9px;color:var(--fire);letter-spacing:1px">${MOS[d.getMonth()].toUpperCase()}</div><div style="font-family:var(--fd);font-size:18px;line-height:1">${d.getDate()}</div></div>
+      <div style="flex:1"><div style="font-weight:700;font-size:13px">${r.nm}</div><div style="font-size:11px;color:var(--txtm)">${r.loc}</div></div>${bT(r.type)}</div>`;
+  }).join('')||`<div style="padding:16px;text-align:center;color:var(--txtm);font-size:12px">No upcoming events</div>`;}
+
+function rDashMaint(){
+  const list=getDeptData('maintenance').slice(0,3);
+  G('dash-maint-alerts').innerHTML=list.length?`<table><thead><tr><th>Equipment</th><th>Due</th><th>Status</th></tr></thead><tbody>${list.map(r=>`<tr><td>${r.equip}</td><td>${r.next||'—'}</td><td>${bS(r.type)}</td></tr>`).join('')}</tbody></table>`:`<div style="padding:16px;text-align:center;color:var(--txtm);font-size:12px">No maintenance records</div>`;}
+
+// ═══ DEPT PROFILE ═══
+function rDeptPro(){
+  const dept=getDept(CU.deptId)||{};
+  G('dp-name').textContent=dept.name||'—'; G('dp-sub').textContent=`FDID: ${dept.fdid||'—'} · EST. ${dept.est||'—'}`;
+  G('dp-desc').textContent=dept.desc||'No description set.';
+  G('dp-fullname').textContent=dept.name||'—'; G('dp-chief').textContent=dept.chief||'—';
+  G('dp-addr').textContent=dept.addr||'—'; G('dp-phone').textContent=dept.ph||'—';
+  G('dp-email').textContent=dept.em||'—'; G('dp-web').textContent=dept.web||'—';
+  G('dp-fdid').textContent=dept.fdid||'—'; G('dp-est').textContent=dept.est||'—';
+  G('dp-type').textContent=dept.type||'—'; G('dp-area').textContent=dept.area||'—';
+  G('dp-iso').textContent=dept.iso||'—'; G('dp-county').textContent=dept.county||'—';
+  G('sbdept').textContent=dept.name||'—';
+  // Photo
+  if(dept.photo){ G('dept-shield-icon').style.display='none'; G('dept-photo').src=dept.photo; G('dept-photo').style.display='block'; }
+  else{ G('dept-shield-icon').style.display='block'; G('dept-photo').style.display='none'; }
+  rStations(); renderCodes(); updateDashStats();
+}
+
+function rStations(){
+  const dept=getDept(CU.deptId)||{}; const stations=dept.stations||[];
+  G('station-list').innerHTML=stations.length?stations.map(st=>`
+    <div class="station-card">
+      <div class="station-hdr">
+        <div class="station-nm">${st.nm}</div>
+        ${CU.isAdmin?`<div class="ac"><button class="btn be bxs" onclick="eSta(${st.id})">✏ Edit</button><button class="btn bd bxs" onclick="delSta(${st.id})">🗑</button></div>`:''}
+      </div>
+      <div class="station-grid">
+        <div><div class="ilbl">Address</div><div class="ival" style="font-size:12px">${st.addr}</div></div>
+        <div><div class="ilbl">Apparatus</div><div class="ival" style="font-size:12px">${st.app||'—'}</div></div>
+        <div><div class="ilbl">Phone</div><div class="ival" style="font-size:12px">${st.ph||'—'}</div></div>
+        <div><div class="ilbl">Personnel</div><div class="ival" style="font-size:12px">${st.pers||'—'}</div></div>
+        ${st.notes?`<div style="grid-column:span 2"><div class="ilbl">Notes</div><div class="ival" style="font-size:12px">${st.notes}</div></div>`:''}
+      </div>
+    </div>`).join(''):`<div style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO STATIONS — Add your first station above</div>`;}
+
+// ═══ DEPT PROFILE EDIT ═══
+function openDeptEdit(){
+  const d=getDept(CU.deptId)||{};
+  G('dpe-name').value=d.name||''; G('dpe-fdid').value=d.fdid||'';
+  G('dpe-est').value=d.est||''; G('dpe-iso').value=d.iso||'';
+  sel('dpe-type',d.type); G('dpe-addr').value=d.addr||'';
+  G('dpe-ph').value=d.ph||''; G('dpe-em').value=d.em||'';
+  G('dpe-web').value=d.web||''; G('dpe-co').value=d.county||'';
+  G('dpe-area').value=d.area||''; G('dpe-desc').value=d.desc||'';
+  G('dpe-chief').value=d.chief||'';
+  OM('mo-deptpro');
+}
+function saveDeptPro(){
+  const depts=getDepts(); const dept=depts.find(d=>d.id===CU.deptId); if(!dept)return;
+  dept.name=G('dpe-name').value||dept.name; dept.fdid=G('dpe-fdid').value;
+  dept.est=G('dpe-est').value; dept.iso=G('dpe-iso').value; dept.type=G('dpe-type').value;
+  dept.addr=G('dpe-addr').value; dept.ph=G('dpe-ph').value; dept.em=G('dpe-em').value;
+  dept.web=G('dpe-web').value; dept.county=G('dpe-co').value; dept.area=G('dpe-area').value;
+  dept.desc=G('dpe-desc').value; dept.chief=G('dpe-chief').value;
+  _cache['__depts']=depts;
+  fbSaveDept(dept).catch(e=>toast('Sync error: '+e.message,'err'));
+  rDeptPro(); CM('mo-deptpro'); toast('Department profile updated!','ok');
+}
+
+// ═══ STATION EDIT ═══
+function eSta(id){
+  const dept=getDept(CU.deptId)||{}; const st=(dept.stations||[]).find(s=>s.id===id); if(!st)return;
+  G('sta-id').value=id; G('sta-nm').value=st.nm; G('sta-addr').value=st.addr;
+  G('sta-app').value=st.app||''; G('sta-pers').value=st.pers||'';
+  G('sta-ph').value=st.ph||''; G('sta-yr').value=st.yr||''; G('sta-notes').value=st.notes||'';
+  setMode('sta','edit','EDIT STATION'); OM('mo-station');
+}
+function delSta(id){
+  const depts=getDepts(); const dept=depts.find(d=>d.id===CU.deptId); if(!dept)return;
+  dept.stations=(dept.stations||[]).filter(s=>s.id!==id);
+  saveDepts(depts); rStations(); updateDashStats(); toast('Station removed','warn');
+}
+async function saveStation(){
+  const eid=+G('sta-id').value||0;
+  const st={nm:G('sta-nm').value,addr:G('sta-addr').value,app:G('sta-app').value,pers:G('sta-pers').value,ph:G('sta-ph').value,yr:G('sta-yr').value,notes:G('sta-notes').value};
+  if(!st.nm||!st.addr){toast('Station name and address required','err');return;}
+  const depts=getDepts(); const dept=depts.find(d=>d.id===CU.deptId); if(!dept)return;
+  if(!dept.stations) dept.stations=[];
+  if(eid){ const idx=dept.stations.findIndex(s=>s.id===eid); if(idx>=0){st.id=eid;dept.stations[idx]=st;} }
+  else{ st.id=++uid; dept.stations.push(st); }
+  // Geocode new station
+  const r=await geocodeAddress(st.addr);
+  if(r){ const s=dept.stations.find(x=>x.id===st.id); if(s){s.lat=r.lat;s.lng=r.lng;} }
+  saveDepts(depts); rStations(); updateDashStats(); if(leafletMap) setTimeout(refreshMap,300);
+  CM('mo-station'); toast(eid?'Station updated!':'Station added!','ok');
+}
+
+// ═══ USER PROFILE ═══
+function toggleProfileEdit(){
+  const form=G('prof-edit-form');
+  if(!form) return;
+  const isOpen=form.style.display!=='none';
+  form.style.display=isOpen?'none':'block';
+  const btn=G('prof-edit-btn');
+  if(btn) btn.textContent=isOpen?`✏ ${T('editInfo')}`:T('cancel');
+  if(!isOpen) loadUserPro(); // refresh fields when opening
+}
+
+function loadUserPro(){
+  if(!CU) return;
+  // Pull latest data from personnel record if it exists (personnel is source of truth)
+  const allPers=_cache['personnel']||[];
+  const persRec=allPers.find(p=>p.deptId===CU.deptId&&p.em&&p.em.toLowerCase()===CU.em.toLowerCase());
+  if(persRec){
+    CU.f=persRec.f||CU.f; CU.l=persRec.l||CU.l; CU.ph=persRec.ph||CU.ph;
+    CU.badge=persRec.badge||CU.badge; CU.yrs=persRec.yrs||CU.yrs;
+    CU.addr=persRec.addr||CU.addr||''; CU.ecn=persRec.ecn||CU.ecn; CU.ecp=persRec.ecp||CU.ecp;
+    if(!CU.isAdmin) CU.pos=persRec.pos||CU.pos; // only sync role if not admin editing own
+  }
+  const nm=CU.f+' '+CU.l;
+  G('pav-big').textContent=''; G('pav-big').style.backgroundImage='';
+  if(CU.photo){G('pav-big').style.backgroundImage=`url(${CU.photo})`;G('pav-big').style.backgroundSize='cover';}
+  else{G('pav-big').textContent=(CU.f[0]+CU.l[0]).toUpperCase();}
+  G('pnm-disp').textContent=nm;
+  G('prole-disp').textContent=CU.pos.toUpperCase()+' · '+(CU.isAdmin?T('fullAccess'):T('member'));
+  const dept=getDept(CU.deptId)||{};
+  G('pdept-disp').textContent=dept.name||CU.deptId;
+  G('pemail-disp').textContent=CU.em||'—'; G('pphone-disp').textContent=CU.ph||'—';
+  G('pbadge-disp').textContent=CU.badge||'—'; G('pyrs-disp').textContent=CU.yrs?CU.yrs+' yrs':'—';
+  // Fill edit form
+  G('pf').value=CU.f; G('pl').value=CU.l; G('pem').value=CU.em||'';
+  G('pph').value=CU.ph||''; G('pbdg').value=CU.badge||''; G('pyrs').value=CU.yrs||'';
+  const pa=G('paddr'); if(pa) pa.value=CU.addr||'';
+  G('pecn').value=CU.ecn||''; G('pecp').value=CU.ecp||'';
+  sel('ppos',CU.pos);
+  const pp=G('ppos'); if(pp){pp.disabled=!CU.isAdmin;pp.style.opacity=CU.isAdmin?'1':'.5';pp.style.cursor=CU.isAdmin?'pointer':'not-allowed';}
+  const pn=G('prolenote'); if(pn) pn.style.display=CU.isAdmin?'block':'none';
+}
+
+function saveProfile(){
+  const f=G('pf').value.trim()||CU.f, l=G('pl').value.trim()||CU.l;
+  const pos=CU.isAdmin?G('ppos').value:CU.pos;
+  const addr=G('paddr')?.value||CU.addr||'';
+  CU.f=f; CU.l=l; CU.em=G('pem').value; CU.ph=G('pph').value; CU.badge=G('pbdg').value;
+  CU.yrs=G('pyrs').value; CU.ecn=G('pecn').value; CU.ecp=G('pecp').value; CU.addr=addr;
+  if(CU.isAdmin){CU.pos=pos; CU.isAdmin=ADMIN_ROLES.includes(pos);}
+  // Persist to Firestore user doc
+  fbSaveUser(CU).catch(e=>toast('Sync error','err'));
+  if(G('ppw')?.value) window.fbUpdPw(G('ppw').value).catch(()=>{});
+  // Sync to personnel
+  const allPers=_cache['personnel']||[];
+  const pIdx=allPers.findIndex(p=>p.deptId===CU.deptId&&p.em&&p.em.toLowerCase()===CU.em.toLowerCase());
+  if(pIdx>=0){
+    allPers[pIdx].f=CU.f; allPers[pIdx].l=CU.l; allPers[pIdx].ph=CU.ph;
+    allPers[pIdx].badge=CU.badge; allPers[pIdx].yrs=CU.yrs; allPers[pIdx].addr=addr;
+    allPers[pIdx].ecn=CU.ecn; allPers[pIdx].ecp=CU.ecp;
+    if(CU.isAdmin) allPers[pIdx].pos=CU.pos;
+    upsertRecord('personnel',allPers[pIdx]);
+  }
+  syncSidebar(); loadUserPro(); applyPerms(); rPers();
+  if(G('prof-edit-form')) G('prof-edit-form').style.display='none';
+  const btn=G('prof-edit-btn'); if(btn) btn.textContent=`✏ ${T('editInfo')}`;
+  toast(T('profileSaved'),'ok');
+}
+
+// PHOTO UPLOADS
+function handleDeptPhoto(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const depts=getDepts(); const dept=depts.find(d=>d.id===CU.deptId);
+    if(dept){dept.photo=ev.target.result;saveDepts(depts);}
+    G('dept-shield-icon').style.display='none'; G('dept-photo').src=ev.target.result; G('dept-photo').style.display='block';
+    toast('Department photo updated!','ok');
+  };
+  reader.readAsDataURL(file);
+}
+function triggerDeptPhoto(){ G('dept-photo-input').click(); }
+
+function handleUserPhoto(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    CU.photo=ev.target.result;
+    const users=getUsers(); const idx=users.findIndex(u=>u.id===CU.id);
+    if(idx>=0){users[idx].photo=ev.target.result;saveUsers(users);}
+    syncSidebar();loadUserPro();toast('Profile photo updated!','ok');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══ MODAL HELPERS ═══
+function OM(id){G(id).classList.add('on');document.body.style.overflow='hidden';}
+function CM(id){G(id).classList.remove('on');document.body.style.overflow='';}
+function setMode(pre,mode,title){
+  const mt=G(pre+'-mtitle'); if(mt) mt.textContent=title;
+  const tg=G(pre+'-mtag'); if(tg){tg.textContent=mode==='edit'?'EDIT':'NEW';tg.className='mtag '+(mode==='edit'?'edit':'new');}
+  const dl=G(pre+'-del'); if(dl) dl.style.display=mode==='edit'?'inline-flex':'none';
+}
+function sel(id,val){const e=G(id);if(!e)return;for(let i=0;i<e.options.length;i++){if(e.options[i].value===val||e.options[i].text===val){e.selectedIndex=i;return;}}}
+function today(){return new Date().toISOString().split('T')[0];}
+function openNew(moid){
+  document.querySelectorAll(`#${moid} input:not([type=file]):not([type=hidden]),#${moid} textarea`).forEach(e=>e.value='');
+  document.querySelectorAll(`#${moid} input[type=hidden]`).forEach(e=>e.value='');
+  document.querySelectorAll(`#${moid} select`).forEach(e=>e.selectedIndex=0);
+  const pre=moid.replace('mo-','');
+  const titles={inc:'FILE INCIDENT REPORT',drone:'NEW DRONE REPORT',min:'NEW MEETING MINUTES',evt:'ADD EVENT',equip:'ADD EQUIPMENT',maint:'LOG MAINTENANCE',pers:'ADD MEMBER',fin:'ADD TRANSACTION',fr:'NEW FUNDRAISER',gr:'ADD GRANT',station:'ADD STATION'};
+  if(moid==='mo-inc'){const all=getDeptData('incidents');G('inc-num').value='INC-'+new Date().getFullYear()+'-'+String(all.length+1).padStart(3,'0');G('inc-date').value=today();G('inc-filed').value=CU.f+' '+CU.l;G('geocode-status').textContent='';
+    G('inc-desc').value='INCIDENT SUMMARY:\n\n\nACTIONS TAKEN:\n\n\nRESULT / OUTCOME:\n\n\nFOLLOW-UP REQUIRED:\n- ';
+  }
+  if(moid==='mo-drone'){const all=getDeptData('drones');G('drone-num').value='DR-'+new Date().getFullYear()+'-'+String(all.length+1).padStart(3,'0');G('drone-date').value=today();G('drone-pilot').value=CU.f+' '+CU.l;
+    G('drone-sum').value='AREA COVERED:\n\n\nOBSERVATIONS:\n\n\nHOTSPOTS / HAZARDS IDENTIFIED:\n- ';
+    G('drone-find').value='KEY FINDINGS:\n\n\nRECOMMENDED FOLLOW-UP:\n- ';
+  }
+  if(moid==='mo-min'){G('min-date').value=today();G('min-rec').value=CU.f+' '+CU.l;
+    G('min-body').value='OLD BUSINESS:\n- \n\nNEW BUSINESS:\n- \n\nMOTIONS:\n- Motion by:          Seconded by:          Vote:\n\nACTION ITEMS:\n- \n\nNEXT MEETING:';
+  }
+  if(moid==='mo-evt'){G('evt-date').value=today();}
+  if(moid==='mo-fin'){G('fin-date').value=today();}
+  if(moid==='mo-maint'){G('maint-date').value=today();}
+  setMode(pre,'new',titles[pre]||'NEW'); OM(moid);
+}
+
+// ═══ EDIT ═══
+function eInc(id){const r=(_cache['incidents']||[]).find(x=>x.id===id);if(!r)return;G('inc-id').value=id;G('inc-num').value=r.num;G('inc-date').value=r.date;G('inc-time').value=r.time||'';sel('inc-type',r.type);G('inc-addr').value=r.addr;G('inc-units').value=r.units;sel('inc-inj',r.inj);G('inc-filed').value=r.filed;sel('inc-status',r.status);G('inc-desc').value=r.desc||'';G('inc-lat').value=r.lat||'';G('inc-lng').value=r.lng||'';const gs=G('geocode-status');if(r.lat){gs.textContent='📍 Pin set — '+r.addr;gs.style.color='var(--grn)';}else{gs.textContent='';geocodePreview(true);}setMode('inc','edit','EDIT REPORT — '+r.num);OM('mo-inc');}
+function eDrone(id){const r=(_cache['drones']||[]).find(x=>x.id===id);if(!r)return;G('drone-id').value=id;G('drone-num').value=r.num;G('drone-date').value=r.date;sel('drone-unit',r.unit);sel('drone-mission',r.mission);G('drone-toff').value=r.toff||'';G('drone-land').value=r.land||'';G('drone-dur').value=r.dur;G('drone-alt').value=r.alt;G('drone-loc').value=r.loc;G('drone-pilot').value=r.pilot;G('drone-obs').value=r.obs||'';sel('drone-wx',r.wx);sel('drone-status',r.status);G('drone-sum').value=r.sum||'';G('drone-find').value=r.find||'';setMode('drone','edit','EDIT — '+r.num);OM('mo-drone');}
+function eMin(id){const r=(_cache['minutes']||[]).find(x=>x.id===id);if(!r)return;G('min-id').value=id;sel('min-type',r.type);G('min-date').value=r.date;G('min-time').value=r.time||'';G('min-subj').value=r.subj;G('min-loc').value=r.loc;G('min-called').value=r.called;G('min-rec').value=r.rec;G('min-pres').value=r.pres;G('min-abs').value=r.abs||'';G('min-body').value=r.body;G('min-adj').value=r.adj||'';setMode('min','edit','EDIT — '+r.subj);OM('mo-min');}
+function eEvt(id){const r=(_cache['events']||[]).find(x=>x.id===id);if(!r)return;G('evt-id').value=id;G('evt-nm').value=r.nm;sel('evt-type',r.type);sel('evt-status',r.status);G('evt-date').value=r.date;G('evt-time').value=r.time||'';G('evt-loc').value=r.loc;G('evt-desc').value=r.desc;G('evt-con').value=r.con||'';setMode('evt','edit','EDIT — '+r.nm);OM('mo-evt');}
+function eEquip(id){const r=(_cache['equipment']||[]).find(x=>x.id===id);if(!r)return;G('equip-id').value=id;G('equip-nm').value=r.nm;sel('equip-type',r.type);G('equip-make').value=r.make||'';G('equip-yr').value=r.yr||'';G('equip-ser').value=r.ser||'';G('equip-price').value=r.price||'';sel('equip-cond',r.cond);G('equip-loc').value=r.loc||'';G('equip-asgn').value=r.asgn||'';G('equip-svc').value=r.svc||'';G('equip-notes').value=r.notes||'';setMode('equip','edit','EDIT — '+r.nm);OM('mo-equip');}
+function eMaint(id){const r=(_cache['maintenance']||[]).find(x=>x.id===id);if(!r)return;G('maint-id').value=id;G('maint-equip').value=r.equip;sel('maint-type',r.type);G('maint-date').value=r.date;G('maint-next').value=r.next||'';G('maint-ven').value=r.ven||'';G('maint-cost').value=r.cost;G('maint-desc').value=r.desc||'';setMode('maint','edit','EDIT — '+r.equip);OM('mo-maint');}
+function ePers(id){const r=(_cache['personnel']||[]).find(x=>x.id===id);if(!r)return;G('pers-id').value=id;G('pers-f').value=r.f;G('pers-l').value=r.l;G('pers-em').value=r.em;sel('pers-pos',r.pos);G('pers-ph').value=r.ph||'';G('pers-badge').value=r.badge||'';G('pers-yrs').value=r.yrs||'';G('pers-addr').value=r.addr||'';G('pers-ecn').value=r.ecn||'';G('pers-ecp').value=r.ecp||'';sel('pers-status',r.status);setMode('pers','edit','EDIT — '+r.f+' '+r.l);OM('mo-pers');}
+function eFin(id){const r=(_cache['finance']||[]).find(x=>x.id===id);if(!r)return;G('fin-id').value=id;sel('fin-type',r.type);sel('fin-cat',r.cat);G('fin-amt').value=r.amt;G('fin-date').value=r.date;G('fin-desc').value=r.desc;G('fin-ven').value=r.ven||'';setMode('fin','edit','EDIT TRANSACTION');OM('mo-fin');}
+function eFr(id){const r=(_cache['fundraisers']||[]).find(x=>x.id===id);if(!r)return;G('fr-id').value=id;G('fr-nm').value=r.nm;sel('fr-type',r.type);G('fr-date').value=r.date;G('fr-goal').value=r.goal;G('fr-raised').value=r.raised;G('fr-exp').value=r.exp;sel('fr-status',r.status);G('fr-desc').value=r.desc||'';setMode('fr','edit','EDIT — '+r.nm);OM('mo-fr');}
+function eGr(id){const r=(_cache['grants']||[]).find(x=>x.id===id);if(!r)return;G('gr-id').value=id;G('gr-nm').value=r.nm;G('gr-org').value=r.org;sel('gr-type',r.type);G('gr-req').value=r.req;G('gr-award').value=r.award||'';G('gr-dead').value=r.dead||'';sel('gr-status',r.status);G('gr-desc').value=r.desc||'';G('gr-notes').value=r.notes||'';setMode('gr','edit','EDIT — '+r.nm);OM('mo-gr');}
+
+// ═══ SAVE ═══
+async function saveInc(fs){
+  const eid=+G('inc-id').value||0;
+  let lat=parseFloat(G('inc-lat').value)||null, lng=parseFloat(G('inc-lng').value)||null;
+  // Try geocoding if no coords yet
+  if(!lat||!lng){const r=await geocodeAddress(G('inc-addr').value);if(r){lat=r.lat;lng=r.lng;}}
+  const d={num:G('inc-num').value,date:G('inc-date').value,time:G('inc-time').value,type:G('inc-type').value,addr:G('inc-addr').value,units:G('inc-units').value,inj:G('inc-inj').value,filed:G('inc-filed').value||CU.f+' '+CU.l,status:fs||G('inc-status').value,desc:G('inc-desc').value,lat,lng,deptId:CU.deptId};
+  d.id=eid||++uid; upsertRecord('incidents',d); rInc(); if(leafletMap) setTimeout(refreshMap,400); renderAll(); CM('mo-inc'); toast(eid?'Report updated!':'Report filed!','ok');}
+
+function saveDrone(){const eid=+G('drone-id').value||0;const d={num:G('drone-num').value,date:G('drone-date').value,unit:G('drone-unit').value,mission:G('drone-mission').value,toff:G('drone-toff').value,land:G('drone-land').value,dur:G('drone-dur').value,alt:G('drone-alt').value,loc:G('drone-loc').value,pilot:G('drone-pilot').value,obs:G('drone-obs').value,wx:G('drone-wx').value,status:G('drone-status').value,sum:G('drone-sum').value,find:G('drone-find').value,deptId:CU.deptId};d.id=eid||++uid;upsertRecord('drones',d);rDrone();updateDashStats();CM('mo-drone');toast(eid?'Report updated!':'Report filed!','ok');}
+function saveMin(){const eid=+G('min-id').value||0;const d={type:G('min-type').value,date:G('min-date').value,time:G('min-time').value,subj:G('min-subj').value,loc:G('min-loc').value,called:G('min-called').value,rec:G('min-rec').value,pres:G('min-pres').value,abs:G('min-abs').value,body:G('min-body').value,adj:G('min-adj').value,deptId:CU.deptId};if(!d.subj){toast('Enter a meeting title','err');return;}d.id=eid||++uid;upsertRecord('minutes',d);rMin();updateDashStats();CM('mo-min');toast(eid?'Minutes updated!':'Minutes saved!','ok');}
+function saveEvt(){const eid=+G('evt-id').value||0;const d={nm:G('evt-nm').value,type:G('evt-type').value,status:G('evt-status').value,date:G('evt-date').value,time:G('evt-time').value,loc:G('evt-loc').value,desc:G('evt-desc').value,con:G('evt-con').value,deptId:CU.deptId};if(!d.nm){toast('Enter an event title','err');return;}d.id=eid||++uid;upsertRecord('events',d);rEvt();rDashEvts();CM('mo-evt');toast(eid?'Event updated!':'Event added!','ok');}
+function saveEquip(){const eid=+G('equip-id').value||0;const d={nm:G('equip-nm').value,type:G('equip-type').value,make:G('equip-make').value,yr:G('equip-yr').value,ser:G('equip-ser').value,price:G('equip-price').value,cond:G('equip-cond').value,loc:G('equip-loc').value,asgn:G('equip-asgn').value,svc:G('equip-svc').value,notes:G('equip-notes').value,deptId:CU.deptId};d.id=eid||++uid;upsertRecord('equipment',d);rEquip();updateDashStats();CM('mo-equip');toast(eid?'Equipment updated!':'Equipment added!','ok');}
+function saveMaint(){const eid=+G('maint-id').value||0;const d={equip:G('maint-equip').value,type:G('maint-type').value,date:G('maint-date').value,next:G('maint-next').value,ven:G('maint-ven').value,cost:G('maint-cost').value,desc:G('maint-desc').value,deptId:CU.deptId};d.id=eid||++uid;upsertRecord('maintenance',d);rMaint();rDashMaint();CM('mo-maint');toast(eid?'Record updated!':'Maintenance logged!','ok');}
+function savePers(){
+  const eid=+G('pers-id').value||0;
+  const d={f:G('pers-f').value,l:G('pers-l').value,em:G('pers-em').value,pos:G('pers-pos').value,ph:G('pers-ph').value,badge:G('pers-badge').value,yrs:G('pers-yrs').value,addr:G('pers-addr').value,ecn:G('pers-ecn').value,ecp:G('pers-ecp').value,status:G('pers-status').value,deptId:CU.deptId};
+  d.id=eid||++uid;
+  upsertRecord('personnel',d);
+  // Sync to users table so login profile stays in sync
+  const users=getUsers();
+  const uIdx=users.findIndex(u=>u.em.toLowerCase()===d.em.toLowerCase()&&u.deptId===CU.deptId);
+  if(uIdx>=0){
+    users[uIdx].f=d.f;users[uIdx].l=d.l;users[uIdx].ph=d.ph;users[uIdx].badge=d.badge;
+    users[uIdx].yrs=d.yrs;users[uIdx].addr=d.addr;users[uIdx].ecn=d.ecn;users[uIdx].ecp=d.ecp;
+    // Only admins can change role
+    if(CU.isAdmin) users[uIdx].pos=d.pos;
+    fbSaveUser(users[uIdx]).catch(()=>{});
+    // If editing the currently logged-in user, update CU too
+    if(users[uIdx].id===CU.id){
+      CU.f=d.f;CU.l=d.l;CU.ph=d.ph;CU.badge=d.badge;CU.yrs=d.yrs;CU.addr=d.addr;CU.ecn=d.ecn;CU.ecp=d.ecp;
+      if(CU.isAdmin){CU.pos=d.pos;CU.isAdmin=ADMIN_ROLES.includes(d.pos);}
+      syncSidebar();loadUserPro();
+    }
+  }
+  rPers();updateDashStats();CM('mo-pers');toast(eid?'Member updated!':'Member added!','ok');
+}
+function saveFin(){const eid=+G('fin-id').value||0;const d={type:G('fin-type').value,cat:G('fin-cat').value,amt:G('fin-amt').value,date:G('fin-date').value,desc:G('fin-desc').value,ven:G('fin-ven').value,deptId:CU.deptId};d.id=eid||++uid;upsertRecord('finance',d);rFin();CM('mo-fin');toast(eid?'Transaction updated!':'Transaction recorded!','ok');}
+
+function saveFr(){
+  const eid=+G('fr-id').value||0;
+  const d={nm:G('fr-nm').value,type:G('fr-type').value,date:G('fr-date').value,goal:G('fr-goal').value,raised:G('fr-raised').value,exp:G('fr-exp').value,status:G('fr-status').value,desc:G('fr-desc').value,deptId:CU.deptId};
+  d.id=eid||++uid;
+  upsertRecord('fundraisers',d);
+
+  // ── Auto-sync to Finance ──
+  const fin=_cache['finance']||[];
+  const raised=parseFloat(d.raised)||0;
+  const exp=parseFloat(d.exp)||0;
+
+  if(d.status==='Completed'||d.status==='Active'){
+    // Income entry: find existing linked record or create new
+    if(raised>0){
+      const existing=fin.findIndex(f=>f.srcType==='fundraiser'&&f.srcId===d.id&&f.type==='Income');
+      const entry={type:'Income',cat:'Fundraiser',amt:raised,date:d.date,desc:d.nm,ven:'',srcType:'fundraiser',srcId:d.id,deptId:CU.deptId};
+      if(existing>=0){fin[existing]={...fin[existing],...entry};}
+      else{entry.id=++uid;fin.push(entry);}
+    }
+    // Expense entry for fundraiser costs
+    if(exp>0){
+      const existing=fin.findIndex(f=>f.srcType==='fundraiser'&&f.srcId===d.id&&f.type==='Expense');
+      const entry={type:'Expense',cat:'Fundraiser',amt:exp,date:d.date,desc:d.nm+' — Expenses',ven:'',srcType:'fundraiser',srcId:d.id,deptId:CU.deptId};
+      if(existing>=0){fin[existing]={...fin[existing],...entry};}
+      else{entry.id=++uid;fin.push(entry);}
+    }
+    _cache['finance']=fin; fin.forEach(r=>fbSaveRecord('finance',r).catch(()=>{}));
+    rFin();
+    toast((eid?'Fundraiser updated':'Fundraiser created')+' — Finance auto-updated ✓','ok');
+  } else {
+    toast(eid?'Fundraiser updated!':'Fundraiser created!','ok');
+  }
+
+  rFr(); CM('mo-fr');
+}
+
+function saveGr(){
+  const eid=+G('gr-id').value||0;
+  const d={nm:G('gr-nm').value,org:G('gr-org').value,type:G('gr-type').value,req:G('gr-req').value,award:G('gr-award').value||0,dead:G('gr-dead').value,status:G('gr-status').value,desc:G('gr-desc').value,notes:G('gr-notes').value,deptId:CU.deptId};
+  d.id=eid||++uid;
+  upsertRecord('grants',d);
+
+  // ── Auto-sync to Finance when Awarded ──
+  const awarded=parseFloat(d.award)||0;
+  if(d.status==='Awarded'&&awarded>0){
+    const fin=_cache['finance']||[];
+    const existing=fin.findIndex(f=>f.srcType==='grant'&&f.srcId===d.id);
+    const entry={type:'Income',cat:'Grant',amt:awarded,date:d.dead||today(),desc:d.nm+(d.org?' — '+d.org:''),ven:d.org||'',srcType:'grant',srcId:d.id,deptId:CU.deptId};
+    if(existing>=0){fin[existing]={...fin[existing],...entry};}
+    else{entry.id=++uid;fin.push(entry);}
+    _cache['finance']=fin; fin.forEach(r=>fbSaveRecord('finance',r).catch(()=>{}));
+    rFin();
+    toast((eid?'Grant updated':'Grant saved')+' — Finance auto-updated ✓','ok');
+  } else {
+    toast(eid?'Grant updated!':'Grant saved!','ok');
+  }
+
+  rGr(); CM('mo-gr');
+}
+
+// ═══ DELETE ═══
+function getLabel2(r){return r.nm||r.num||r.subj||r.desc||r.equip||(r.f&&r.f+' '+r.l)||'this record';}
+function confirmDel(key,idField,moid){
+  const id=+G(idField).value;
+  const rec=(_cache[key]||[]).find(x=>x.id===id);
+  G('conf-msg').innerHTML=`Are you sure you want to permanently delete<br><strong style="color:var(--txt)">"${getLabel2(rec||{})}"</strong>?<br><br>This cannot be undone.`;
+  G('conf-yes').onclick=()=>{deleteRecord(key,id);CM('mo-confirm');CM(moid);renderAll();toast('Deleted','warn');};
+  OM('mo-confirm');
+}
+function qDel(key,id){
+  const rec=(_cache[key]||[]).find(x=>x.id===id);
+  G('conf-msg').innerHTML=`Delete <strong style="color:var(--txt)">"${getLabel2(rec||{})}"</strong>? This cannot be undone.`;
+  G('conf-yes').onclick=()=>{deleteRecord(key,id);CM('mo-confirm');renderAll();toast('Deleted','warn');};
+  OM('mo-confirm');
+}
+
+// ═══ NAV ═══
+function go(page,el){
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  if(el) el.classList.add('on');
+  const pg=G('pg-'+page); if(pg) pg.classList.add('on');
+  if(page==='userpro') loadUserPro();
+  if(page==='map'){
+    setTimeout(()=>{
+      if(typeof L === 'undefined'){ toast('Map library still loading, try again in a moment','warn'); return; }
+      if(!leafletMap) initMap();
+      else { leafletMap.invalidateSize(); refreshMap(); }
+    },150);
+  }
+  if(page==='deptpro'){ rDeptPro(); renderCodes(); }
+  if(page==='fin'){ rFin(); }
+  // Live Firestore refresh for personnel — always shows newest members
+  if(page==='pers'){
+    fbLoadCol('personnel').then(()=>{ rPers(); updateDashStats(); });
+  }
+  // Sync mobile bottom nav highlight
+  const _mmap={dash:'mni-dash',inc:'mni-inc',map:'mni-map',minutes:'mni-minutes',
+    drone:'mni-drone',deptpro:'mni-deptpro',events:'mni-events',equip:'mni-equip',
+    maint:'mni-maint',pers:'mni-pers',fin:'mni-fin',fr:'mni-fr',gr:'mni-gr',userpro:'mni-userpro'};
+  document.querySelectorAll('.mob-nav-item,.mob-more-item').forEach(b=>b.classList.remove('on'));
+  const _mb=G(_mmap[page]); if(_mb) _mb.classList.add('on');
+  const _primary=['dash','inc','map','minutes'];
+  if(!_primary.includes(page)) { const _mm=G('mni-more'); if(_mm) _mm.classList.add('on'); }
+}
+
+function toast(msg,type=''){
+  const t=document.createElement('div');t.className='toast '+(type==='ok'?'ok':type==='err'?'err':type==='warn'?'warn':'');
+  t.textContent=msg; G('tc').appendChild(t); setTimeout(()=>t.remove(),3200);
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.mo').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)CM(o.id);}));
+
+// ═══ GLOBAL ENTER KEY HANDLER ═══
+// Maps each open modal to its primary save action.
+// Textarea fields are excluded so Enter still creates new lines.
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter') return;
+  if(e.target.tagName==='TEXTAREA') return; // let Enter work normally in text areas
+
+  // Which modal is open?
+  const openModal=document.querySelector('.mo.on');
+  if(openModal){
+    e.preventDefault();
+    const actions={
+      'mo-inc':  ()=>saveInc('Filed'),
+      'mo-drone':()=>saveDrone(),
+      'mo-deptpro':()=>saveDeptPro(),
+      'mo-station':()=>saveStation(),
+      'mo-min':  ()=>saveMin(),
+      'mo-evt':  ()=>saveEvt(),
+      'mo-equip':()=>saveEquip(),
+      'mo-maint':()=>saveMaint(),
+      'mo-pers': ()=>savePers(),
+      'mo-fin':  ()=>saveFin(),
+      'mo-fr':   ()=>saveFr(),
+      'mo-gr':   ()=>saveGr(),
+      'mo-confirm':()=>{ const btn=G('conf-yes'); if(btn) btn.click(); },
+    };
+    const fn=actions[openModal.id];
+    if(fn) fn();
+    return;
+  }
+
+  // No modal — check which screen/form is active
+  const activeScrn=document.querySelector('.screen.on');
+  if(!activeScrn) return;
+
+  // Language screen
+  if(activeScrn.id==='slang'){ e.preventDefault(); confirmLang(); return; }
+
+  // Login/Register screen
+  if(activeScrn.id==='sl'){
+    const activeTab=document.querySelector('.tp.on');
+    if(!activeTab) return;
+    e.preventDefault();
+    if(activeTab.id==='tp-in'){ doLogin(); return; }
+    // Registration steps
+    const step1=G('reg-step1'); const step2=G('reg-step2'); const step3=G('reg-step3');
+    if(step1&&step1.style.display!=='none'){ regStep1(); return; }
+    if(step2&&step2.style.display!=='none'){
+      const joinForm=G('join-dept-form');
+      const newForm=G('new-dept-form');
+      if(joinForm&&joinForm.style.display!=='none'){
+        // If code not yet verified, verify; else advance
+        const preview=G('join-dept-preview');
+        if(preview&&preview.style.display==='block') regStep3();
+        else regJoinDept();
+        return;
+      }
+      if(newForm&&newForm.style.display!=='none'){ regCreateDept(); return; }
+    }
+    if(step3&&step3.style.display!=='none'){ finalRegister(); return; }
+    return;
+  }
+
+  // Main app — profile edit form
+  if(activeScrn.id==='sa'){
+    const profForm=G('prof-edit-form');
+    if(profForm&&profForm.style.display!=='none'&&e.target.closest('#prof-edit-form')){
+      e.preventDefault(); saveProfile();
+    }
+  }
+});
+
+// ═══ INIT ═══
+// Language
+const savedLang=loadStore('fc_lang',null);
+if(savedLang){
+  LANG=savedLang; selectedLang=savedLang;
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    b.classList.remove('sel');
+    if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+savedLang+"'")) b.classList.add('sel');
+  });
+  applyTranslations();
+}
+
+// Show loading screen until Firebase initialises
+showScreen('sl');
+
+// Wait for Firebase module then check auth state
+function waitForFB(cb){
+  if(window.FB_READY) cb();
+  else document.addEventListener('fb-ready', cb, {once:true});
+}
+waitForFB(()=>{
+  window.fbOnAuth(async user=>{
+    if(user){
+      // Already signed in — restore session
+      try{
+        const userData=await fbLoadUser(user.uid);
+        if(userData){ await loginAs(userData); return; }
+      }catch(e){ console.warn('Session restore failed',e); }
+    }
+    // Not signed in — show correct first screen
+    if(!savedLang) showScreen('slang');
+    else showScreen('sl');
+  });
+});
+
+// ═══ MOBILE NAV ═══
+function mobGo(page, btnId){
+  closeMobMore();
+  // Update mobile nav active state
+  document.querySelectorAll('.mob-nav-item,.mob-more-item').forEach(b=>b.classList.remove('on'));
+  const btn=G(btnId); if(btn) btn.classList.add('on');
+  // Also sync desktop nav
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  const desktopNi=document.querySelector(`.ni[onclick*="go('${page}"]`);
+  if(desktopNi) desktopNi.classList.add('on');
+  // Navigate
+  go(page, desktopNi);
+}
+function toggleMobMore(){
+  const sheet=G('mob-more-sheet'), overlay=G('mob-overlay');
+  const isOpen=sheet.classList.contains('on');
+  sheet.classList.toggle('on',!isOpen);
+  overlay.classList.toggle('on',!isOpen);
+  G('mni-more').classList.toggle('on',!isOpen);
+}
+function closeMobMore(){
+  G('mob-more-sheet')?.classList.remove('on');
+  G('mob-overlay')?.classList.remove('on');
+  G('mni-more')?.classList.remove('on');
+}
+// Sync mobile nav when desktop nav is used
+
+
+// Register service worker for PWA
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
