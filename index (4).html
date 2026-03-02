@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fire Command — Shady Grove VFD</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<!-- v3.1 -->
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ff4500">
@@ -55,7 +59,7 @@
   // Get all docs in a collection path
   window.fbGetCol  =(path)=>getDocs(collection(DB,...seg(path)));
   window.fbListen  =(path,cb)=>onSnapshot(collection(DB,...seg(path)),snap=>{
-    const docs=[]; snap.forEach(d=>docs.push({...d.data()})); cb(docs);
+    const docs=[]; snap.forEach(d=>docs.push({id:d.id,...d.data()})); cb(docs);
   });
   window.fbBatch   =()=>writeBatch(DB);
   window.fbDoc2    =(path)=>doc(DB,...seg(path));
@@ -65,7 +69,48 @@
   document.dispatchEvent(new Event('fb-ready'));
 </script>
 <style>
-:root{--bg:#0a0a0c;--bg2:#111114;--card:#16161a;--elev:#1e1e24;--bdr:#2a2a35;--bdr2:#3a3a48;--fire:#ff4500;--fire2:#ff6a00;--glow:rgba(255,69,0,.15);--amb:#ffb300;--grn:#00e676;--red:#ff1744;--blu:#2979ff;--pur:#aa00ff;--tel:#00bcd4;--txt:#f0f0f5;--txt2:#8888a0;--txtm:#555568;--fd:'Bebas Neue',sans-serif;--fb:'Rajdhani',sans-serif;--fm:'Share Tech Mono',monospace;}
+:root{
+  --bg:#0a0a0c;--bg2:#111114;--card:#16161a;--elev:#1e1e24;
+  --bdr:#2a2a35;--bdr2:#3a3a48;
+  --fire:#ff4500;--fire2:#ff6a00;--glow:rgba(255,69,0,.15);
+  --amb:#ffb300;--grn:#00e676;--red:#ff1744;--blu:#2979ff;--pur:#aa00ff;--tel:#00bcd4;
+  --txt:#ffffff;--txt2:#ccccdd;--txtm:#9999b0;
+  --fd:'Bebas Neue',sans-serif;--fb:'Rajdhani',sans-serif;--fm:'Share Tech Mono',monospace;
+  --mode-transition:background .25s,color .25s,border-color .25s;
+}
+/* ── LIGHT MODE ── */
+body.light-mode{
+  --bg:#ffffff;--bg2:#f4f4f6;--card:#ffffff;--elev:#eeeeef;
+  --bdr:#d0d0da;--bdr2:#b0b0be;
+  --glow:rgba(255,69,0,.08);
+  --txt:#0a0a0c;--txt2:#333344;--txtm:#666677;
+}
+body.light-mode .lcard,
+body.light-mode .tcard,
+body.light-mode .mcard,
+body.light-mode .sc,
+body.light-mode .md{background:#ffffff;border-color:#d0d0da;}
+body.light-mode .sb,
+body.light-mode .mob-nav,
+body.light-mode .mob-more-sheet{background:#f4f4f6;border-color:#d0d0da;}
+body.light-mode input,
+body.light-mode select,
+body.light-mode textarea{background:#f9f9fb;border-color:#c0c0ce;color:#0a0a0c;}
+body.light-mode select option{background:#ffffff;color:#0a0a0c;}
+body.light-mode .ni{color:var(--txt2);}
+body.light-mode .ni.on{color:var(--fire);background:rgba(255,69,0,.06);}
+body.light-mode .mob-nav-item{color:var(--txt2);}
+body.light-mode .mob-nav-item.on{color:var(--fire);}
+body.light-mode .mob-more-item{background:#ffffff;border-color:#d0d0da;color:var(--txt2);}
+body.light-mode .toast{background:#ffffff;border:1px solid #d0d0da;color:#0a0a0c;}
+body.light-mode .blogout{color:var(--txtm);}
+body.light-mode table{background:#ffffff;}
+body.light-mode tr:hover{background:rgba(0,0,0,.03);}
+body.light-mode .aitem:hover{background:rgba(0,0,0,.02);}
+body.light-mode .phero{background:linear-gradient(135deg,rgba(255,69,0,.06),rgba(255,106,0,.03));}
+body.light-mode .pcard{background:#f9f9fb;border-color:#d0d0da;}
+body.light-mode .badge{opacity:.9;}
+body,*{transition:var(--mode-transition);}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--txt);font-family:var(--fb);font-size:15px;min-height:100vh;overflow-x:hidden;}
 .screen{display:none;min-height:100vh;}.screen.on{display:flex;}
@@ -235,18 +280,23 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .edmo{font-family:var(--fm);font-size:9px;color:var(--fire);letter-spacing:2px;text-transform:uppercase;}
 .edday{font-family:var(--fd);font-size:24px;line-height:1;}
 /* PROFILE HERO */
-.phero{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:24px;margin-bottom:16px;position:relative;}
+.phero{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:16px;margin-bottom:16px;position:relative;overflow:hidden;}
 .phero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--fire),transparent);}
-.phero-inner{display:flex;gap:20px;align-items:flex-start;}
-.pbigav{width:72px;height:72px;border-radius:50%;background:var(--glow);border:3px solid var(--fire);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:28px;color:var(--fire);flex-shrink:0;overflow:hidden;position:relative;}
+.phero-inner{display:flex;gap:14px;align-items:flex-start;flex-wrap:nowrap;min-width:0;}
+.pbigav{width:68px;height:68px;border-radius:50%;background:var(--glow);border:3px solid var(--fire);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:26px;color:var(--fire);flex-shrink:0;overflow:hidden;position:relative;}
 .pbigav img{width:100%;height:100%;object-fit:cover;}
-.pname{font-family:var(--fd);font-size:32px;letter-spacing:2px;}
-.prole{font-family:var(--fm);font-size:12px;color:var(--fire);letter-spacing:2px;margin-top:3px;}
-.pdept{font-size:13px;color:var(--txtm);margin-top:4px;}
-.igrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
-.iitem{background:var(--elev);border:1px solid var(--bdr);border-radius:3px;padding:9px 13px;}
-.ilbl{font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:2px;margin-bottom:3px;}
-.ival{font-size:13px;font-weight:600;}
+.phero-info{flex:1;min-width:0;overflow:hidden;}
+.pname{font-family:var(--fd);font-size:26px;letter-spacing:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.prole{font-family:var(--fm);font-size:11px;color:var(--fire);letter-spacing:2px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pdept{font-size:12px;color:var(--txtm);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.igrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;width:100%;}
+.iitem{background:var(--elev);border:1px solid var(--bdr);border-radius:3px;padding:8px 10px;min-width:0;overflow:hidden;}
+.ilbl{font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-bottom:3px;white-space:nowrap;}
+.ival{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media(max-width:400px){
+  .igrid{grid-template-columns:1fr;}
+  .pname{font-size:22px;}
+}
 /* DEPT PROFILE */
 .dhero{background:var(--card);border:1px solid var(--bdr);border-radius:4px;padding:24px;margin-bottom:16px;position:relative;overflow:hidden;}
 .dhero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--fire),transparent);}
@@ -317,6 +367,16 @@ textarea{resize:vertical;min-height:80px;}
 .place-hint{background:rgba(255,69,0,.12);border:1px solid rgba(255,69,0,.3);border-radius:3px;padding:6px 12px;font-family:var(--fm);font-size:11px;color:var(--fire);letter-spacing:1px;animation:pulse2 1.5s ease-in-out infinite;}
 @keyframes pulse2{0%,100%{opacity:1}50%{opacity:.6}}
 /* RESPONSIVE */
+/* ── TOGGLE SWITCH ── */
+.toggle-switch{position:relative;display:inline-block;width:52px;height:28px;flex-shrink:0;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--elev);
+  border:1px solid var(--bdr2);border-radius:28px;transition:.25s;}
+.toggle-slider:before{content:'';position:absolute;width:20px;height:20px;
+  left:3px;bottom:3px;background:var(--txtm);border-radius:50%;transition:.25s;}
+.toggle-switch input:checked + .toggle-slider{background:var(--fire);border-color:var(--fire);}
+.toggle-switch input:checked + .toggle-slider:before{transform:translateX(24px);background:#fff;}
+
 /* ═══ MOBILE BOTTOM NAV ═══ */
 .mob-nav{position:fixed;bottom:0;left:0;right:0;z-index:900;
   background:var(--bg2);border-top:1px solid var(--bdr);
@@ -562,6 +622,7 @@ textarea{resize:vertical;min-height:80px;}
     <div class="sbu" onclick="go('userpro',null)" title="My Profile">
       <div class="ua" id="sbav">—</div>
       <div class="ui"><div class="un" id="sbnm">—</div><div class="ur" id="sbrole">—</div></div>
+
       <button class="blogout" onclick="event.stopPropagation();doLogout()" title="Logout">⏻</button>
     </div>
   </nav>
@@ -602,6 +663,8 @@ textarea{resize:vertical;min-height:80px;}
       <span class="mni">📝</span><span>Grants</span></div>
     <div class="mob-more-item" id="mni-userpro" onclick="mobGo('userpro','mni-userpro')">
       <span class="mni">👤</span><span>My Profile</span></div>
+    <div class="mob-more-item" id="mob-theme-item" onclick="toggleTheme(!document.body.classList.contains('light-mode'));syncThemeToggle()">
+      <span class="mni" id="mob-theme-icon">☀️</span><span id="mob-theme-txt">Light Mode</span></div>
     <div class="mob-more-item" style="border-color:var(--red);color:var(--red)" onclick="doLogout()">
       <span class="mni">⏻</span><span>Sign Out</span></div>
   </div>
@@ -633,7 +696,7 @@ textarea{resize:vertical;min-height:80px;}
     <div id="pg-inc" class="pg">
       <div class="ph"><div><div class="pt">INCI<span>DENTS</span></div><div class="ps">INCIDENT REPORTS & RECORDS</div></div><div class="pa" id="inc-act"></div></div>
       <div id="inc-note" class="ronly" style="display:none">🔒 Read-only — contact an admin to make changes</div>
-      <div class="sbar"><input id="inc-srch" placeholder="Search incidents..." style="max-width:240px" oninput="rInc()"><select id="inc-flt" style="max-width:150px" onchange="rInc()"><option value="">All Types</option><option>Structure Fire</option><option>Vehicle Fire</option><option>Medical</option><option>Hazmat</option><option>Wildland Fire</option><option>Rescue</option><option>Other</option></select></div>
+      <div class="sbar"><input id="inc-srch" placeholder="Search incidents..." style="max-width:240px" oninput="rInc()"><select id="inc-flt" style="max-width:150px" onchange="rInc()"><option value="">All Types</option><option>Structure Fire</option><option>Vehicle Fire</option><option>Medical</option><option>Hazmat</option><option>Wildland Fire</option><option>Rescue</option><option>Landing Zone</option><option>Other</option></select></div>
       <div id="inc-list"></div>
     </div>
 
@@ -645,7 +708,7 @@ textarea{resize:vertical;min-height:80px;}
             <button class="btn bs bsm" onclick="startPlaceMode()">📍 Place Station Pin</button>
             <button class="btn bs bsm" onclick="regeocodeAll()">🔄 Re-pin All Addresses</button>
           </div>
-          <select id="map-flt-type" style="padding:7px 12px;font-size:13px;background:var(--elev);border:1px solid var(--bdr);color:var(--txt);border-radius:3px" onchange="refreshMap()"><option value="">All Types</option><option>Structure Fire</option><option>Vehicle Fire</option><option>Medical</option><option>Wildland Fire</option><option>Hazmat</option><option>Rescue</option><option>Other</option></select>
+          <select id="map-flt-type" style="padding:7px 12px;font-size:13px;background:var(--elev);border:1px solid var(--bdr);color:var(--txt);border-radius:3px" onchange="refreshMap()"><option value="">All Types</option><option>Structure Fire</option><option>Vehicle Fire</option><option>Medical</option><option>Wildland Fire</option><option>Hazmat</option><option>Rescue</option><option>Landing Zone</option><option>Other</option></select>
         </div>
       </div>
       <div class="tcard">
@@ -661,6 +724,7 @@ textarea{resize:vertical;min-height:80px;}
           <div class="legitem"><div class="legdot" style="background:#ff4500"></div>Structure Fire</div>
           <div class="legitem"><div class="legdot" style="background:#ffb300"></div>Vehicle Fire</div>
           <div class="legitem"><div class="legdot" style="background:#2979ff"></div>Medical</div>
+          <div class="legitem"><div class="legdot" style="background:#00bcd4"></div>Landing Zone</div>
           <div class="legitem"><div class="legdot" style="background:#00e676"></div>Station</div>
           <div class="legitem"><div class="legdot" style="background:#00bcd4"></div>Drone Recon</div>
           <div class="legitem"><div class="legdot" style="background:#aa00ff"></div>Wildland / Hazmat</div>
@@ -756,7 +820,19 @@ textarea{resize:vertical;min-height:80px;}
 
     <!-- USER PROFILE -->
     <div id="pg-userpro" class="pg">
-      <div class="ph"><div><div class="pt">MY <span>PROFILE</span></div><div class="ps">PERSONAL ACCOUNT SETTINGS</div></div></div>
+      <div class="ph">
+        <div><div class="pt">MY <span>PROFILE</span></div><div class="ps">PERSONAL ACCOUNT SETTINGS</div></div>
+        <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+          <div style="text-align:right">
+            <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:2px;text-transform:uppercase">Display</div>
+            <div style="font-size:12px;color:var(--txt2);margin-top:2px" id="theme-label">🌑 Dark</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="theme-toggle" onchange="toggleTheme(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
       <div class="phero">
         <div class="phero-inner">
           <div style="position:relative">
@@ -764,7 +840,7 @@ textarea{resize:vertical;min-height:80px;}
             <input type="file" id="user-photo-input" style="display:none" accept="image/*" onchange="handleUserPhoto(event)">
             <button class="btn bsm" style="margin-top:6px;width:72px;font-size:10px;padding:4px 8px" onclick="G('user-photo-input').click()">📷 Photo</button>
           </div>
-          <div style="flex:1">
+          <div class="phero-info">
             <div class="pname" id="pnm-disp">—</div>
             <div class="prole" id="prole-disp">—</div>
             <div class="pdept" id="pdept-disp">—</div>
@@ -772,7 +848,7 @@ textarea{resize:vertical;min-height:80px;}
               <div class="iitem"><div class="ilbl">Email</div><div class="ival" id="pemail-disp">—</div></div>
               <div class="iitem"><div class="ilbl">Phone</div><div class="ival" id="pphone-disp">—</div></div>
               <div class="iitem"><div class="ilbl">Badge #</div><div class="ival" id="pbadge-disp">—</div></div>
-              <div class="iitem"><div class="ilbl">Years of Service</div><div class="ival" id="pyrs-disp">—</div></div>
+              <div class="iitem"><div class="ilbl">Years</div><div class="ival" id="pyrs-disp">—</div></div>
             </div>
           </div>
         </div>
@@ -819,14 +895,14 @@ textarea{resize:vertical;min-height:80px;}
     <div id="pg-equip" class="pg">
       <div class="ph"><div><div class="pt">EQUIP<span>MENT</span></div><div class="ps">APPARATUS & GEAR INVENTORY</div></div><div class="pa" id="equip-act"></div></div>
       <div id="equip-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
-      <div class="tcard"><table><thead><tr><th>Item</th><th>Type</th><th>Year/Serial</th><th>Condition</th><th>Assigned</th><th>Next Service</th><th>Actions</th></tr></thead><tbody id="equip-tb"></tbody></table></div>
+      <div class="tcard"><div id="equip-tb"></div></div>
     </div>
 
     <!-- MAINTENANCE -->
     <div id="pg-maint" class="pg">
       <div class="ph"><div><div class="pt">MAIN<span>TENANCE</span></div><div class="ps">SERVICE & REPAIR RECORDS</div></div><div class="pa" id="maint-act"></div></div>
       <div id="maint-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
-      <div class="tcard"><table><thead><tr><th>Equipment</th><th>Type</th><th>Date</th><th>Performed By</th><th>Cost</th><th>Next Due</th><th>Actions</th></tr></thead><tbody id="maint-tb"></tbody></table></div>
+      <div class="tcard"><div id="maint-tb"></div></div>
     </div>
 
     <!-- PERSONNEL -->
@@ -856,7 +932,7 @@ textarea{resize:vertical;min-height:80px;}
           <div class="sc cf"><div class="sl2">Total Expenses</div><div class="sv" id="fin-tot-ex">$0</div><div class="ss">Equipment, payroll, utilities</div></div>
           <div class="sc ca"><div class="sl2">Net Balance</div><div class="sv" id="fin-net">$0</div><div class="ss">YTD surplus/deficit</div></div>
         </div>
-        <div class="tcard"><div class="thead2"><div class="ttl">TRANSACTIONS</div></div><table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th>Amount</th><th>Actions</th></tr></thead><tbody id="fin-tb"></tbody></table></div>
+        <div class="tcard"><div class="thead2"><div class="ttl">TRANSACTIONS</div></div><div id="fin-tb"></div></div>
       </div>
     </div>
 
@@ -864,14 +940,14 @@ textarea{resize:vertical;min-height:80px;}
     <div id="pg-fr" class="pg">
       <div class="ph"><div><div class="pt">FUND<span>RAISERS</span></div><div class="ps">CAMPAIGNS & EVENTS</div></div><div class="pa" id="fr-act"></div></div>
       <div id="fr-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
-      <div class="tcard"><table><thead><tr><th>Event</th><th>Type</th><th>Date</th><th>Goal</th><th>Raised</th><th>Net</th><th>Status</th><th>Actions</th></tr></thead><tbody id="fr-tb"></tbody></table></div>
+      <div class="tcard"><div id="fr-tb"></div></div>
     </div>
 
     <!-- GRANTS — visible to all -->
     <div id="pg-gr" class="pg">
       <div class="ph"><div><div class="pt">GRANT<span>S</span></div><div class="ps">APPLICATIONS & AWARDS TRACKER</div></div><div class="pa" id="gr-act"></div></div>
       <div id="gr-note" class="ronly" style="display:none">🔒 Read-only — contact admin to make changes</div>
-      <div class="tcard"><table><thead><tr><th>Grant Name</th><th>Organization</th><th>Requested</th><th>Awarded</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead><tbody id="gr-tb"></tbody></table></div>
+      <div class="tcard"><div id="gr-tb"></div></div>
     </div>
 
   </main>
@@ -883,7 +959,7 @@ textarea{resize:vertical;min-height:80px;}
   <div class="mh"><div class="mt2" id="inc-mtitle">FILE INCIDENT REPORT</div><span class="mtag new" id="inc-mtag">NEW</span><button class="mx" onclick="CM('mo-inc')">✕</button></div>
   <div class="mb"><input type="hidden" id="inc-id">
     <div class="fr2"><div class="fg"><label>Report # <span style="color:var(--txtm);font-size:10px">(editable)</span></label><input id="inc-num" style="color:var(--fire)"></div><div class="fg"><label>Date</label><input type="date" id="inc-date"></div></div>
-    <div class="fr2"><div class="fg"><label>Time</label><input type="time" id="inc-time"></div><div class="fg"><label>Type</label><select id="inc-type"><option>Structure Fire</option><option>Vehicle Fire</option><option>Wildland Fire</option><option>Medical</option><option>Hazmat</option><option>Rescue</option><option>Other</option></select></div></div>
+    <div class="fr2"><div class="fg"><label>Time</label><input type="time" id="inc-time"></div><div class="fg"><label>Type</label><select id="inc-type"><option>Structure Fire</option><option>Vehicle Fire</option><option>Wildland Fire</option><option>Medical</option><option>Hazmat</option><option>Rescue</option><option>Landing Zone</option><option>Other</option></select></div></div>
     <div class="fg"><label>Address (used for map pin)</label><input id="inc-addr" placeholder="123 Main Street, City, State" oninput="geocodePreview()" onblur="geocodePreview(true)"></div>
     <div id="geocode-status" style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:-10px;margin-bottom:10px"></div>
     <input type="hidden" id="inc-lat"><input type="hidden" id="inc-lng">
@@ -1216,7 +1292,9 @@ const MOS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','De
 const DAYNAMES=['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
 const MONSFULL=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
 const G=id=>document.getElementById(id);
-let uid=900, CU=null, leafletMap=null, mapMarkers=[], geocodeTimer=null;
+let CU=null, leafletMap=null, mapMarkers=[], geocodeTimer=null;
+// Always use timestamp + random suffix for new record IDs — never reuses IDs across sessions
+function newId(){ return Date.now()*1000 + Math.floor(Math.random()*1000); }
 
 // ═══════════════════════════════════════════
 // DEMO DEPARTMENTS & USERS DATABASE
@@ -1242,16 +1320,46 @@ async function fbGetDoc2(path){
 async function fbSetDoc2(path,data){
   await window.fbSetDoc(path,data,{merge:true});
 }
+// ═══════════════════════════════════════════
+// REAL-TIME DATA LAYER
+// Every collection has a live onSnapshot listener.
+// Any write on any device instantly updates every other device.
+// ═══════════════════════════════════════════
+
+const _unsubs={}; // holds unsubscribe functions for all listeners
+
+// Start a live listener on a dept sub-collection
+function listenCol(col, onUpdate){
+  if(_unsubs[col]) _unsubs[col](); // cancel existing
+  if(!CU?.deptId) return;
+  const path=`depts/${CU.deptId}/${col}`;
+  _unsubs[col]=window.fbListen(path,(docs)=>{
+    _cache[col]=docs;
+    if(onUpdate) onUpdate(docs);
+  });
+}
+
+// Stop all listeners (on logout)
+function stopAllListeners(){
+  Object.values(_unsubs).forEach(u=>{ try{u();}catch(e){} });
+  Object.keys(_unsubs).forEach(k=>delete _unsubs[k]);
+  if(_persUnsub){ try{_persUnsub();}catch(e){} _persUnsub=null; }
+}
+
+// One-time load of a collection (used only for initial data before listeners start)
 async function fbLoadCol(col){
   if(!CU?.deptId) return [];
   const path=`depts/${CU.deptId}/${col}`;
   const snap=await window.fbGetCol(path);
-  const data=[]; snap.forEach(d=>data.push({...d.data()}));
+  const data=[]; snap.forEach(d=>data.push({id:d.id,...d.data()}));
   _cache[col]=data; return data;
 }
+
 async function fbSaveRecord(col,rec,deptId){
   const did=deptId||CU?.deptId; if(!did) return;
-  await window.fbSetDoc(`depts/${did}/${col}/${rec.id}`,rec,{merge:true});
+  const docId=String(rec.id); // always string for Firestore doc ID
+  rec.id=docId; // keep in sync
+  await window.fbSetDoc(`depts/${did}/${col}/${docId}`,rec,{merge:true});
 }
 async function fbDelRecord(col,id,deptId){
   const did=deptId||CU?.deptId; if(!did) return;
@@ -1259,24 +1367,41 @@ async function fbDelRecord(col,id,deptId){
 }
 
 // ── Dept/User Firestore ops ──
-async function fbLoadDept(deptId){
-  return fbGetDoc2(`depts/${deptId}`);
-}
-async function fbSaveDept(dept){
-  await window.fbSetDoc(`depts/${dept.id}`,dept,{merge:true});
-}
-async function fbLoadUser(uid){
-  return fbGetDoc2(`users/${uid}`);
-}
-async function fbSaveUser(user){
-  await window.fbSetDoc(`users/${user.id}`,user,{merge:true});
-}
+async function fbLoadDept(deptId){ return fbGetDoc2(`depts/${deptId}`); }
+async function fbSaveDept(dept){ await window.fbSetDoc(`depts/${dept.id}`,dept,{merge:true}); }
+async function fbLoadUser(uid){ return fbGetDoc2(`users/${uid}`); }
+async function fbSaveUser(user){ await window.fbSetDoc(`users/${user.id}`,user,{merge:true}); }
 
-// Load all sub-collections for current dept into cache
+// Initial one-time load of all dept collections
 async function loadAllDeptData(){
   const cols=['incidents','drones','minutes','events','equipment',
-              'maintenance','personnel','finance','fundraisers','grants'];
+              'maintenance','finance','fundraisers','grants'];
   await Promise.all(cols.map(c=>fbLoadCol(c)));
+}
+
+// Start live listeners on ALL dept collections after login
+// Each listener keeps its collection in _cache and re-renders the right page
+function startAllListeners(){
+  stopAllListeners();
+
+  const reRenderMap={
+    incidents: ()=>{ rInc(); updateDashStats(); if(leafletMap) setTimeout(refreshMap,300); },
+    drones:    ()=>{ rDrone(); updateDashStats(); },
+    minutes:   ()=>{ rMin(); updateDashStats(); },
+    events:    ()=>{ rEvt(); rDashEvts(); },
+    equipment: ()=>{ rEquip(); updateDashStats(); },
+    maintenance:()=>{ rMaint(); rDashMaint(); },
+    finance:   ()=>{ if(CU?.isAdmin) rFin(); },
+    fundraisers:()=>{ rFr(); },
+    grants:    ()=>{ rGr(); },
+  };
+
+  Object.entries(reRenderMap).forEach(([col,fn])=>{
+    listenCol(col, ()=>{ try{ fn(); }catch(e){} });
+  });
+
+  // Personnel listener — reads from users collection
+  startPersonnelListener();
 }
 
 // ── Sync-compatible accessors (same API as before) ──
@@ -1293,11 +1418,14 @@ function saveUsers(users){
   users.forEach(u=>fbSaveUser(u).catch(e=>console.error('saveUsers',e)));
 }
 function upsertRecord(key,rec){
+  // Always ensure id is a string so Firestore doc ID and record id always match
+  if(!rec.id) rec.id=String(newId());
+  rec.id=String(rec.id);
+
   const arr=_cache[key]||[];
-  const idx=arr.findIndex(r=>r.id===rec.id);
+  const idx=arr.findIndex(r=>String(r.id)===rec.id);
   if(idx>=0) arr[idx]=rec; else arr.unshift(rec);
   _cache[key]=arr;
-  // Pass rec.deptId as fallback so saves work even before CU is set
   fbSaveRecord(key,rec,rec.deptId).catch(e=>toast('Sync error: '+e.message,'err'));
 }
 function deleteRecord(key,id){
@@ -1556,15 +1684,105 @@ async function doLogin(){
 
 async function loginAs(userData){
   CU={...userData, isAdmin:ADMIN_ROLES.includes(userData.pos)};
-  toast('Loading your department...','');
+  toast('Loading department...','');
   try{
     const dept=await fbLoadDept(CU.deptId);
     _cache['__depts']=dept?[dept]:[];
+    // Load initial data synchronously so first render has content
     await loadAllDeptData();
-    startPersonnelListener();
+    await repairUserDoc();
+    await syncPersonnelFromUsers();
+
+    // Render the app
     enterApp();
+
+    // Start ALL real-time listeners — from this point every device stays in sync
+    startAllListeners();
   }catch(e){
-    toast('Error loading department: '+e.message,'err');
+    console.error('loginAs error:',e);
+    toast('Login error: '+e.message,'err');
+  }
+}
+
+// Build personnel cache from users collection
+// users collection is the single source of truth for members
+// Repair malformed user doc — fixes typos like 'dp ID' instead of 'deptId'
+// Runs on every login so bad data gets corrected automatically
+async function repairUserDoc(){
+  if(!CU?.id||!CU?.deptId) return;
+  try{
+    const snap=await window.fbGetDoc(`users/${CU.id}`);
+    if(!snap.exists()) return;
+    const u=snap.data();
+    const needsRepair=!u.deptId||(u['dp ID']&&!u.deptId);
+    if(needsRepair){
+      // Write corrected doc with proper deptId field
+      await window.fbSetDoc(`users/${CU.id}`,{
+        ...u,
+        deptId:CU.deptId,
+        id:CU.id,
+      },{merge:true});
+      console.log('Repaired user doc for',CU.f,CU.l);
+    }
+  }catch(e){ console.warn('repairUserDoc:',e); }
+}
+
+async function syncPersonnelFromUsers(){
+  if(!CU?.deptId) return;
+  try{
+    // Try reading the whole users collection
+    const snap=await window.fbGetCol('users');
+    const members=[];
+    snap.forEach(d=>{
+      const u={...d.data(), id:d.id};
+      // Handle typo 'dp ID' as well as correct 'deptId' field name
+      const deptId=u.deptId||u['dp ID']||u['deptid']||u['dept_id']||'';
+      if(deptId===CU.deptId && u.f){
+        members.push({
+          id:u.id, f:u.f, l:u.l||'', em:u.em||'',
+          pos:u.pos||'Member', ph:u.ph||'', badge:u.badge||'',
+          yrs:u.yrs||'', addr:u.addr||'', ecn:u.ecn||'',
+          ecp:u.ecp||'', status:'Active', deptId:CU.deptId
+        });
+      }
+    });
+
+    if(members.length===0 && CU.id){
+      // Collection read returned nothing — likely a Firestore rules block
+      // Fall back: read current user's own doc (always allowed) 
+      // and build a single-member list
+      const mySnap=await window.fbGetDoc(`users/${CU.id}`);
+      if(mySnap.exists()){
+        const u=mySnap.data();
+        members.push({
+          id:CU.id, f:u.f||CU.f, l:u.l||CU.l||'', em:u.em||CU.em||'',
+          pos:u.pos||CU.pos||'Member', ph:u.ph||'', badge:u.badge||'',
+          yrs:u.yrs||'', addr:u.addr||'', ecn:u.ecn||'',
+          ecp:u.ecp||'', status:'Active', deptId:CU.deptId
+        });
+      } else {
+        // Last resort: use CU directly
+        members.push({
+          id:CU.id, f:CU.f, l:CU.l||'', em:CU.em||'',
+          pos:CU.pos||'Member', ph:CU.ph||'', badge:CU.badge||'',
+          yrs:CU.yrs||'', addr:CU.addr||'', ecn:CU.ecn||'',
+          ecp:CU.ecp||'', status:'Active', deptId:CU.deptId
+        });
+      }
+      console.warn('Users collection read blocked — showing current user only. Fix Firestore rules.');
+    }
+
+    _cache['personnel']=members;
+    console.log('Personnel loaded:',members.length,'members for dept',CU.deptId);
+  }catch(e){
+    // If all else fails, at least show the current user
+    console.error('syncPersonnelFromUsers error:',e);
+    _cache['personnel']=[{
+      id:CU.id, f:CU.f, l:CU.l||'', em:CU.em||'',
+      pos:CU.pos||'Member', ph:CU.ph||'', badge:CU.badge||'',
+      yrs:CU.yrs||'', addr:CU.addr||'', ecn:'', ecp:'',
+      status:'Active', deptId:CU.deptId
+    }];
   }
 }
 
@@ -1574,53 +1792,117 @@ async function forceSyncPersonnel(){
   const btn=document.querySelector('#pers-sync-banner .btn');
   if(btn){ btn.textContent='Syncing...'; btn.disabled=true; }
   toast('Syncing all members to cloud...','');
-  const all=_cache['personnel']||[];
+
+  // Pull from ALL possible sources: localStorage (old data), cache, and current user
+  const sources=[];
+
+  // 1. Old localStorage data (pre-Firebase migration)
+  try{
+    const ls=localStorage.getItem('fc_personnel');
+    if(ls){ const parsed=JSON.parse(ls); if(Array.isArray(parsed)) sources.push(...parsed); }
+  }catch(e){}
+
+  // 2. Current cache
+  const cached=_cache['personnel']||[];
+  sources.push(...cached);
+
+  // 3. Always include the currently logged-in user
+  sources.push({
+    id:CU.id+'_p', f:CU.f, l:CU.l, em:CU.em,
+    pos:CU.pos, ph:CU.ph||'', badge:CU.badge||'',
+    yrs:CU.yrs||'', addr:CU.addr||'', ecn:CU.ecn||'',
+    ecp:CU.ecp||'', status:'Active', deptId:CU.deptId
+  });
+
+  // Deduplicate by email
+  const seen=new Set();
+  const unique=sources.filter(r=>{
+    if(!r||!r.f) return false;
+    const key=(r.em||r.id||'').toLowerCase();
+    if(seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+
   let count=0;
-  for(const rec of all){
-    if(!rec.deptId) rec.deptId=CU.deptId;
-    // Ensure string ID for Firestore
-    if(typeof rec.id==='number') rec.id=String(rec.id);
+  for(const rec of unique){
+    rec.deptId=rec.deptId||CU.deptId;
+    rec.status=rec.status||'Active';
+    // Ensure string ID for Firestore document ID
+    const docId=String(rec.id||rec.em||Date.now());
+    rec.id=docId;
     try{
-      await window.fbSetDoc(`depts/${CU.deptId}/personnel/${rec.id}`,rec,{merge:true});
+      await window.fbSetDoc(`depts/${CU.deptId}/personnel/${docId}`,rec,{merge:true});
       count++;
-    }catch(e){ console.warn('Sync failed for',rec,e); }
+    }catch(e){ console.warn('Sync failed for',rec.f,e); }
   }
-  // Reload from Firestore to confirm
+
+  // Reload from Firestore to confirm and update UI
   await fbLoadCol('personnel');
   rPers(); updateDashStats();
-  G('pers-sync-banner').style.display='none';
+  const banner=G('pers-sync-banner');
+  if(banner) banner.style.display='none';
   toast(`Synced ${count} members to cloud ✓`,'ok');
 }
 
-// Show sync banner if personnel in cache but check if Firestore has them all
+// Check on login if Firestore personnel is missing data — auto-sync if admin
 async function checkPersonnelSync(){
-  if(!CU?.isAdmin) return;
-  const cached=_cache['personnel']||[];
-  if(cached.length===0) return;
-  // Count how many are actually in Firestore
-  const snap=await window.fbGetCol(`depts/${CU.deptId}/personnel`).catch(()=>null);
-  if(!snap) return;
-  const firestoreCount=snap.size||0;
-  if(firestoreCount<cached.length){
-    G('pers-sync-banner').style.display='block';
-  }
+  if(!CU?.deptId) return;
+  try{
+    const snap=await window.fbGetCol(`depts/${CU.deptId}/personnel`);
+    const firestoreCount=snap.size||0;
+
+    // Check localStorage for old data
+    let localCount=0;
+    try{
+      const ls=localStorage.getItem('fc_personnel');
+      if(ls){ const p=JSON.parse(ls); localCount=Array.isArray(p)?p.filter(r=>r.deptId===CU.deptId).length:0; }
+    }catch(e){}
+
+    const cacheCount=(_cache['personnel']||[]).length;
+    const maxKnown=Math.max(localCount,cacheCount);
+
+    if(firestoreCount===0 || (maxKnown>0 && firestoreCount<maxKnown)){
+      if(CU.isAdmin){
+        // Auto-sync silently for admins
+        await forceSyncPersonnel();
+      } else {
+        // Show banner for non-admins
+        const banner=G('pers-sync-banner');
+        if(banner) banner.style.display='block';
+      }
+    }
+  }catch(e){ console.warn('checkPersonnelSync error',e); }
 }
 
 // Live Firestore listener — personnel roster updates in real-time
 // for all connected devices when someone new registers
 let _persUnsub=null;
 function startPersonnelListener(){
-  if(_persUnsub) _persUnsub(); // cancel any previous listener
+  if(_persUnsub) _persUnsub();
   if(!CU?.deptId) return;
-  const path=`depts/${CU.deptId}/personnel`;
-  _persUnsub=window.fbListen(path,(docs)=>{
-    _cache['personnel']=docs;
-    // Update roster and stats silently in background
+  // Listen on users collection — fires immediately and on every change
+  _persUnsub=window.fbListen('users',(docs)=>{
+    const members=docs
+      .filter(u=>{
+        const deptId=u.deptId||u['dp ID']||u['deptid']||u['dept_id']||'';
+        return deptId===CU.deptId && u.f;
+      })
+      .map(u=>({
+        id:u.id, f:u.f, l:u.l||'', em:u.em||'',
+        pos:u.pos||'Member', ph:u.ph||'', badge:u.badge||'',
+        yrs:u.yrs||'', addr:u.addr||'', ecn:u.ecn||'',
+        ecp:u.ecp||'', status:'Active', deptId:CU.deptId  // always write correct field
+      }));
+    // Always update cache with whatever listener returns
+    _cache['personnel']=members;
+    const count=members.length;
+    // Update all member count displays
+    ['dash-mbr','dp-mbrs'].forEach(id=>{
+      const el=G(id); if(el) el.textContent=count;
+    });
+    // Refresh roster if visible
     if(G('pg-pers')?.classList.contains('on')) rPers();
-    // Update member count on dashboard
-    const pers=docs.filter(p=>p.status==='Active'&&p.deptId===CU.deptId);
-    const mbr=G('dash-mbr'); if(mbr) mbr.textContent=pers.length;
-    const dpMbrs=G('dp-mbrs'); if(dpMbrs) dpMbrs.textContent=pers.length;
+    console.log('Personnel listener fired:',count,'members');
   });
 }
 
@@ -1628,8 +1910,7 @@ function enterApp(){
   try{
     syncSidebar(); applyPerms(); renderAll(); startClock();
     showScreen('sa'); toast('Welcome, '+CU.f+'!','ok');
-    // Fresh personnel + stats after a moment so new sign-ups show immediately
-    setTimeout(()=>{ updateDashStats(); checkPersonnelSync(); }, 800);
+
     setTimeout(geocodeMissingIncidents, 1500);
   }catch(err){
     console.error('enterApp error:',err);
@@ -1665,7 +1946,10 @@ async function regeocodeAll(){
 
 
 function doLogout(){
-  CU=null; _cache.__depts=[];
+  stopAllListeners();
+  CU=null;
+
+  Object.keys(_cache).forEach(k=>delete _cache[k]);
   if(leafletMap){leafletMap.remove();leafletMap=null;}
   window.fbSignOut().catch(()=>{});
   showScreen('sl');
@@ -1797,7 +2081,7 @@ async function geocodePreview(immediate){
 // ═══════════════════════════════════════════
 // MAP — Leaflet + OpenStreetMap + pin placement
 // ═══════════════════════════════════════════
-const INC_COLORS={'Structure Fire':'#ff4500','Vehicle Fire':'#ffb300','Medical':'#2979ff','Wildland Fire':'#aa00ff','Hazmat':'#aa00ff','Rescue':'#ff6a00','Other':'#555568'};
+const INC_COLORS={'Structure Fire':'#ff4500','Vehicle Fire':'#ffb300','Medical':'#2979ff','Wildland Fire':'#aa00ff','Hazmat':'#aa00ff','Rescue':'#ff6a00','Landing Zone':'#00bcd4','Other':'#555568'};
 let placeModeActive=false, placeStationId=null;
 
 let incPlaceModeActive=false, incPlaceId=null;
@@ -1900,7 +2184,7 @@ function refreshMap(){
   });
 
   // ── Incident markers ──
-  const emojiMap={'Structure Fire':'🔥','Vehicle Fire':'🚗','Medical':'🏥','Wildland Fire':'🌲','Hazmat':'☢️','Rescue':'🚨','Other':'📍'};
+  const emojiMap={'Structure Fire':'🔥','Vehicle Fire':'🚗','Medical':'🏥','Wildland Fire':'🌲','Hazmat':'☢️','Rescue':'🚨','Landing Zone':'🚁','Other':'📍'};
   const allInc=_cache['incidents']||[];
 
   incidents.forEach(r=>{
@@ -1955,11 +2239,12 @@ function renderAll(){
   if(leafletMap && typeof L !== 'undefined') setTimeout(refreshMap,300);
 }
 
-async function updateDashStats(){
-  // Always fetch fresh personnel from Firestore so new sign-ups appear immediately
-  await fbLoadCol('personnel').catch(()=>{});
+function updateDashStats(){
+  // Just read cache — personnel is kept fresh by syncPersonnelFromUsers called at login
   const incs=getDeptData('incidents'); const drones=getDeptData('drones');
-  const pers=getDeptData('personnel').filter(p=>p.status==='Active');
+  const pers=(_cache['personnel']||[]).filter(p=>
+    (!p.deptId||p.deptId===CU?.deptId)
+  );
   const grants=getDeptData('grants').filter(g=>g.status==='In Progress'||g.status==='Submitted');
   G('dash-inc').textContent=incs.length; G('stat-drone').textContent=drones.length;
   G('dash-eq').textContent=getDeptData('equipment').length; G('dash-mbr').textContent=pers.length;
@@ -1976,7 +2261,7 @@ async function updateDashStats(){
 }
 
 // ═══ BADGE HELPERS ═══
-function bT(t){const m={'Structure Fire':'bf','Vehicle Fire':'ba','Wildland Fire':'bpu','Medical':'bb','Hazmat':'bpu','Rescue':'ba','Apparatus':'bf','SCBA':'ba','Tool':'bgr','PPE':'bgr','Drone':'bt','Communication':'bgr','Event':'ba','Drive':'bb','Online Campaign':'bgr','Sale':'bgr','Federal':'bb','State':'bgn','Local':'ba','Private':'bgr','Meeting':'bb','Training':'bgn','Fundraiser':'ba','Community':'bpu','Business':'bb','Incident Recon':'bf','Wildland Survey':'bgn','Search & Rescue':'ba','Training Flight':'bb','Damage Assessment':'ba','Routine Inspection':'bgr','Other':'bgr'};return`<span class="badge ${m[t]||'bgr'}">${t}</span>`;}
+function bT(t){const m={'Structure Fire':'bf','Vehicle Fire':'ba','Wildland Fire':'bpu','Medical':'bb','Hazmat':'bpu','Rescue':'ba','Landing Zone':'bt','Apparatus':'bf','SCBA':'ba','Tool':'bgr','PPE':'bgr','Drone':'bt','Communication':'bgr','Event':'ba','Drive':'bb','Online Campaign':'bgr','Sale':'bgr','Federal':'bb','State':'bgn','Local':'ba','Private':'bgr','Meeting':'bb','Training':'bgn','Fundraiser':'ba','Community':'bpu','Business':'bb','Incident Recon':'bf','Wildland Survey':'bgn','Search & Rescue':'ba','Training Flight':'bb','Damage Assessment':'ba','Routine Inspection':'bgr','Other':'bgr'};return`<span class="badge ${m[t]||'bgr'}">${t}</span>`;}
 function bS(s){const m={Draft:'ba',Submitted:'ba',Filed:'bgn',Active:'ba',Planned:'bb',Upcoming:'bb',Completed:'bgn',Confirmed:'bgn',Reviewed:'bgn',Cancelled:'br','In Progress':'bb',Awarded:'bgn',Denied:'br',Researching:'bgr',Closed:'bgr',Income:'bgn',Expense:'br',Service:'bgn',Repair:'br','Routine Inspection':'bb',Testing:'bb',Replacement:'ba',Other:'bgr'};return`<span class="badge ${m[s]||'bgr'}">${s}</span>`;}
 function bC(c){const m={Excellent:'bgn',Good:'bgn',Fair:'ba',Poor:'br','Out of Service':'br'};return`<span class="badge ${m[c]||'bgr'}">${c}</span>`;}
 function $m(n){return n>0?'$'+Number(n).toLocaleString():'—';}
@@ -1985,8 +2270,8 @@ function eb(fn,lbl='✏ Edit'){return CU&&CU.isAdmin?`<button class="btn be bxs"
 function rInc(){
   const s=G('inc-srch')?.value.toLowerCase()||'',f=G('inc-flt')?.value||'';
   const list=getDeptData('incidents').filter(r=>{if(f&&r.type!==f)return false;if(s&&!r.addr?.toLowerCase().includes(s)&&!r.num?.toLowerCase().includes(s)&&!r.desc?.toLowerCase().includes(s))return false;return true;});
-  const colors={'Structure Fire':'rgba(255,69,0,.12)','Vehicle Fire':'rgba(255,179,0,.1)','Medical':'rgba(41,121,255,.12)','Wildland Fire':'rgba(170,0,255,.1)','Hazmat':'rgba(170,0,255,.1)','Rescue':'rgba(255,106,0,.12)','Other':'rgba(255,255,255,.04)'};
-  const icons={'Structure Fire':'🔥','Vehicle Fire':'🚗','Medical':'🏥','Wildland Fire':'🌲','Hazmat':'☢️','Rescue':'🚨','Other':'📋'};
+  const colors={'Structure Fire':'rgba(255,69,0,.12)','Vehicle Fire':'rgba(255,179,0,.1)','Medical':'rgba(41,121,255,.12)','Wildland Fire':'rgba(170,0,255,.1)','Hazmat':'rgba(170,0,255,.1)','Rescue':'rgba(255,106,0,.12)','Landing Zone':'rgba(0,188,212,.12)','Other':'rgba(255,255,255,.04)'};
+  const icons={'Structure Fire':'🔥','Vehicle Fire':'🚗','Medical':'🏥','Wildland Fire':'🌲','Hazmat':'☢️','Rescue':'🚨','Landing Zone':'🚁','Other':'📋'};
   G('inc-list').innerHTML=list.length?list.map(r=>`
     <div class="mcard"><div class="mchdr" onclick="togCard('inc-${r.id}')">
       <div class="mctypeicon" style="background:${colors[r.type]||'rgba(255,255,255,.04)'}">${icons[r.type]||'📋'}</div>
@@ -2100,21 +2385,66 @@ function rEvt(){
       ${CU&&CU.isAdmin?`<div style="flex-shrink:0">${eb(`eEvt(${r.id})`)}</div>`:''}
     </div>`;}).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO UPCOMING EVENTS</div>`;}
 
-function rEquip(){G('equip-tb').innerHTML=(getDeptData('equipment')||[]).map(r=>`<tr>
-  <td><strong>${r.nm}</strong></td><td>${bT(r.type)}</td>
-  <td style="font-family:var(--fm);font-size:11px">${r.yr||'—'} · ${r.ser||'—'}</td>
-  <td>${bC(r.cond)}</td><td>${r.asgn||'—'}</td>
-  <td style="color:${r.cond==='Fair'||r.cond==='Poor'?'var(--red)':'inherit'}">${r.svc||'—'}</td>
-  <td><div class="ac">${eb(`eEquip(${r.id})`)}</div></td>
-</tr>`).join('')||`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO EQUIPMENT ON FILE</td></tr>`;}
+function rEquip(){
+  const list=getDeptData('equipment')||[];
+  const condColor=c=>c==='Poor'?'var(--red)':c==='Fair'?'var(--amb)':'var(--grn)';
+  const typeIcon={Apparatus:'🚒',SCBA:'💨',Tool:'🔧',PPE:'🦺',Drone:'🚁',Communication:'📻',Other:'📦'};
+  G('equip-tb').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('eq-${r.id}')">
+      <div class="mctypeicon" style="background:rgba(0,188,212,.1)">${typeIcon[r.type]||'🔧'}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.nm}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">${bT(r.type)} · ${bC(r.cond)} · ${r.asgn||'Unassigned'}</div>
+      </div>
+      <span style="color:var(--txtm);font-size:16px" id="arr-eq-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="eq-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">YEAR</span><br>${r.yr||'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">SERIAL</span><br>${r.ser||'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">CONDITION</span><br><span style="color:${condColor(r.cond)}">${r.cond||'—'}</span></div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">ASSIGNED TO</span><br>${r.asgn||'—'}</div>
+        <div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">LAST SERVICE</span><br><span style="color:${r.cond==='Fair'||r.cond==='Poor'?'var(--red)':'inherit'}">${r.svc||'—'}</span></div>
+        ${r.notes?`<div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">NOTES</span><br>${r.notes}</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eEquip(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('equipment',${r.id})">🗑</button>`:''}
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO EQUIPMENT ON FILE</div>`;
+}
 
-function rMaint(){G('maint-tb').innerHTML=(getDeptData('maintenance')||[]).map(r=>`<tr>
-  <td><strong>${r.equip}</strong></td><td>${bS(r.type)}</td><td>${r.date}</td>
-  <td>${r.ven||'—'}</td><td style="font-family:var(--fm)">${$m(r.cost)}</td><td>${r.next||'—'}</td>
-  <td><div class="ac">${eb(`eMaint(${r.id})`)}</div></td>
-</tr>`).join('')||`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO MAINTENANCE RECORDS</td></tr>`;}
+function rMaint(){
+  const list=getDeptData('maintenance')||[];
+  G('maint-tb').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('mt-${r.id}')">
+      <div class="mctypeicon" style="background:rgba(255,179,0,.1)">🔩</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.equip}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">${bS(r.type)} · ${r.date} · Next: ${r.next||'—'}</div>
+      </div>
+      <span style="color:var(--txtm);font-size:16px" id="arr-mt-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="mt-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">DATE</span><br>${r.date}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">TYPE</span><br>${r.type}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">VENDOR</span><br>${r.ven||'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">COST</span><br>${$m(r.cost)}</div>
+        <div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">NEXT DUE</span><br>${r.next||'—'}</div>
+        ${r.notes?`<div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">NOTES</span><br>${r.notes}</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eMaint(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('maintenance',${r.id})">🗑</button>`:''}
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO MAINTENANCE RECORDS</div>`;
+}
 
-function rPers(){G('pers-grid').innerHTML=(getDeptData('personnel')||[]).map(r=>{
+function rPers(){
+  // Show all personnel in cache for this dept — also catch records where deptId may be missing
+  const all=(_cache['personnel']||[]).filter(r=>
+    !r.deptId || r.deptId===CU?.deptId
+  );
+  G('pers-grid').innerHTML=(all||[]).map(r=>{
   const isA=ADMIN_ROLES.includes(r.pos);
   return`<div class="pcard">
     <div class="pav">${r.f[0]}${r.l[0]}</div>
@@ -2134,30 +2464,87 @@ function rFin(){
   G('fin-tot-ex').textContent='$'+expense.toLocaleString();
   const net=income-expense;
   G('fin-net').textContent=(net>=0?'$':'-$')+Math.abs(net).toLocaleString();
-  G('fin-tb').innerHTML=list.map(r=>`<tr>
-    <td>${r.date}</td>
-    <td>${r.desc}${r.srcType?`<span style="font-family:var(--fm);font-size:9px;color:var(--txtm);border:1px solid var(--bdr);border-radius:2px;padding:1px 5px;margin-left:6px">AUTO · ${r.srcType.toUpperCase()}</span>`:''}</td>
-    <td><span class="badge bgr">${r.cat}</span></td>
-    <td>${bS(r.type)}</td>
-    <td style="font-family:var(--fm);color:${r.type==='Income'?'var(--grn)':'var(--red)'}">${r.type==='Income'?'+':'-'}${$m(r.amt)}</td>
-    <td><div class="ac">${r.srcType?`<span style="font-family:var(--fm);font-size:10px;color:var(--txtm)" title="Auto-generated — edit the source ${r.srcType}">🔗 Auto</span>`:eb(`eFin(${r.id})`)}</div></td>
-  </tr>`).join('')||`<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO TRANSACTIONS</td></tr>`;}
+  G('fin-tb').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('fn-${r.id}')">
+      <div class="mctypeicon" style="background:${r.type==='Income'?'rgba(0,230,118,.1)':'rgba(255,23,68,.1)'}">${r.type==='Income'?'💵':'💸'}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.desc}${r.srcType?` <span style="font-family:var(--fm);font-size:9px;color:var(--txtm);border:1px solid var(--bdr);border-radius:2px;padding:1px 4px">AUTO</span>`:''}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">${r.date} · <span class="badge bgr">${r.cat}</span></div>
+      </div>
+      <div style="font-family:var(--fm);font-size:14px;font-weight:700;color:${r.type==='Income'?'var(--grn)':'var(--red)'};margin-right:8px">${r.type==='Income'?'+':'-'}${$m(r.amt)}</div>
+      <span style="color:var(--txtm);font-size:16px" id="arr-fn-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="fn-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">DATE</span><br>${r.date}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">CATEGORY</span><br>${r.cat}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">TYPE</span><br>${bS(r.type)}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">AMOUNT</span><br><span style="color:${r.type==='Income'?'var(--grn)':'var(--red)'};font-weight:700">${r.type==='Income'?'+':'-'}${$m(r.amt)}</span></div>
+      </div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${r.srcType?`<span style="font-family:var(--fm);font-size:11px;color:var(--txtm)">🔗 Auto-generated from ${r.srcType}</span>`
+        :CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eFin(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('finance',${r.id})">🗑</button>`:''}
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO TRANSACTIONS</div>`;
+}
 
-function rFr(){G('fr-tb').innerHTML=(getDeptData('fundraisers')||[]).map(r=>`<tr>
-  <td><strong>${r.nm}</strong></td><td>${bT(r.type)}</td><td>${r.date}</td>
-  <td style="font-family:var(--fm)">${$m(r.goal)}</td>
-  <td style="font-family:var(--fm);color:${r.raised>0?'var(--grn)':'var(--txtm)'}">${r.raised>0?$m(r.raised):'—'}</td>
-  <td style="font-family:var(--fm);color:${(r.raised-r.exp)>0?'var(--grn)':'var(--txtm)'}">${r.raised>0?$m(r.raised-r.exp):'—'}</td>
-  <td>${bS(r.status)}</td><td><div class="ac">${eb(`eFr(${r.id})`)}</div></td>
-</tr>`).join('')||`<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO FUNDRAISERS</td></tr>`;}
+function rFr(){
+  const list=getDeptData('fundraisers')||[];
+  G('fr-tb').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('fr-${r.id}')">
+      <div class="mctypeicon" style="background:rgba(0,230,118,.1)">💰</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.nm}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">${bT(r.type)} · ${r.date} · ${bS(r.status)}</div>
+      </div>
+      <div style="text-align:right;margin-right:8px;font-family:var(--fm);font-size:12px">
+        <div style="color:var(--grn)">${r.raised>0?$m(r.raised):'$0'}</div>
+        <div style="color:var(--txtm);font-size:10px">of ${$m(r.goal)}</div>
+      </div>
+      <span style="color:var(--txtm);font-size:16px" id="arr-fr-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="fr-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">GOAL</span><br>${$m(r.goal)}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">RAISED</span><br><span style="color:var(--grn)">${r.raised>0?$m(r.raised):'—'}</span></div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">EXPENSES</span><br>${r.exp>0?$m(r.exp):'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">NET</span><br><span style="color:${(r.raised-r.exp)>0?'var(--grn)':'var(--txtm)'}">${r.raised>0?$m(r.raised-r.exp):'—'}</span></div>
+        ${r.desc?`<div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">DESCRIPTION</span><br>${r.desc}</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eFr(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('fundraisers',${r.id})">🗑</button>`:''}
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO FUNDRAISERS</div>`;
+}
 
-function rGr(){G('gr-tb').innerHTML=(getDeptData('grants')||[]).map(r=>`<tr>
-  <td><strong>${r.nm}</strong></td><td>${r.org}</td>
-  <td style="font-family:var(--fm)">${$m(r.req)}</td>
-  <td style="font-family:var(--fm);color:${r.award>0?'var(--grn)':r.status==='Denied'?'var(--red)':'var(--txtm)'}">${r.award>0?$m(r.award):r.status==='Denied'?'Denied':'Pending'}</td>
-  <td>${r.dead||'—'}</td><td>${bS(r.status)}</td>
-  <td><div class="ac">${eb(`eGr(${r.id})`)}</div></td>
-</tr>`).join('')||`<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO GRANTS</td></tr>`;}
+function rGr(){
+  const list=getDeptData('grants')||[];
+  G('gr-tb').innerHTML=list.length?list.map(r=>`
+    <div class="mcard"><div class="mchdr" onclick="togCard('gr-${r.id}')">
+      <div class="mctypeicon" style="background:rgba(41,121,255,.12)">🏛️</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:14px">${r.nm}</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--txtm);letter-spacing:1px;margin-top:3px">${r.org} · ${bS(r.status)} · Due: ${r.dead||'—'}</div>
+      </div>
+      <div style="text-align:right;margin-right:8px;font-family:var(--fm);font-size:12px">
+        <div style="color:${r.award>0?'var(--grn)':r.status==='Denied'?'var(--red)':'var(--txtm)'}">${r.award>0?$m(r.award):r.status==='Denied'?'Denied':'Pending'}</div>
+        <div style="color:var(--txtm);font-size:10px">req ${$m(r.req)}</div>
+      </div>
+      <span style="color:var(--txtm);font-size:16px" id="arr-gr-${r.id}">▶</span>
+    </div>
+    <div class="mcbody" id="gr-${r.id}">
+      <div style="padding:11px 0 7px;display:grid;grid-template-columns:1fr 1fr;gap:9px;font-size:13px">
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">ORGANIZATION</span><br>${r.org}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">DEADLINE</span><br>${r.dead||'—'}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">REQUESTED</span><br>${$m(r.req)}</div>
+        <div><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">AWARDED</span><br><span style="color:${r.award>0?'var(--grn)':r.status==='Denied'?'var(--red)':'var(--txtm)'}">${r.award>0?$m(r.award):r.status==='Denied'?'Denied':'—'}</span></div>
+        ${r.notes?`<div style="grid-column:span 2"><span style="color:var(--txtm);font-family:var(--fm);font-size:10px;letter-spacing:1px">NOTES</span><br>${r.notes}</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;padding-top:9px;border-top:1px solid var(--bdr)">
+        ${CU&&CU.isAdmin?`<button class="btn be bsm" onclick="eGr(${r.id})">✏ Edit</button><button class="btn bd bsm" onclick="qDel('grants',${r.id})">🗑</button>`:''}
+      </div>
+    </div></div>`).join(''):`<div style="text-align:center;padding:50px;color:var(--txtm);font-family:var(--fm);font-size:11px;letter-spacing:2px">NO GRANTS</div>`;
+}
 
 function rDashActivity(){
   const incs=getDeptData('incidents').slice(0,3);
@@ -2255,7 +2642,7 @@ async function saveStation(){
   const depts=getDepts(); const dept=depts.find(d=>d.id===CU.deptId); if(!dept)return;
   if(!dept.stations) dept.stations=[];
   if(eid){ const idx=dept.stations.findIndex(s=>s.id===eid); if(idx>=0){st.id=eid;dept.stations[idx]=st;} }
-  else{ st.id=++uid; dept.stations.push(st); }
+  else{ st.id=newId(); dept.stations.push(st); }
   // Geocode new station
   const r=await geocodeAddress(st.addr);
   if(r){ const s=dept.stations.find(x=>x.id===st.id); if(s){s.lat=r.lat;s.lng=r.lng;} }
@@ -2303,6 +2690,8 @@ function loadUserPro(){
   sel('ppos',CU.pos);
   const pp=G('ppos'); if(pp){pp.disabled=!CU.isAdmin;pp.style.opacity=CU.isAdmin?'1':'.5';pp.style.cursor=CU.isAdmin?'pointer':'not-allowed';}
   const pn=G('prolenote'); if(pn) pn.style.display=CU.isAdmin?'block':'none';
+  // Sync theme toggle to current state
+  syncThemeToggle();
 }
 
 function saveProfile(){
@@ -2408,18 +2797,21 @@ async function saveInc(fs){
   // Try geocoding if no coords yet
   if(!lat||!lng){const r=await geocodeAddress(G('inc-addr').value);if(r){lat=r.lat;lng=r.lng;}}
   const d={num:G('inc-num').value,date:G('inc-date').value,time:G('inc-time').value,type:G('inc-type').value,addr:G('inc-addr').value,units:G('inc-units').value,inj:G('inc-inj').value,filed:G('inc-filed').value||CU.f+' '+CU.l,status:fs||G('inc-status').value,desc:G('inc-desc').value,lat,lng,deptId:CU.deptId};
-  d.id=eid||++uid; upsertRecord('incidents',d); rInc(); if(leafletMap) setTimeout(refreshMap,400); renderAll(); CM('mo-inc'); toast(eid?'Report updated!':'Report filed!','ok');}
+  d.id=eid||newId(); upsertRecord('incidents',d); rInc(); if(leafletMap) setTimeout(refreshMap,400); renderAll(); CM('mo-inc'); toast(eid?'Report updated!':'Report filed!','ok');}
 
-function saveDrone(){const eid=+G('drone-id').value||0;const d={num:G('drone-num').value,date:G('drone-date').value,unit:G('drone-unit').value,mission:G('drone-mission').value,toff:G('drone-toff').value,land:G('drone-land').value,dur:G('drone-dur').value,alt:G('drone-alt').value,loc:G('drone-loc').value,pilot:G('drone-pilot').value,obs:G('drone-obs').value,wx:G('drone-wx').value,status:G('drone-status').value,sum:G('drone-sum').value,find:G('drone-find').value,deptId:CU.deptId};d.id=eid||++uid;upsertRecord('drones',d);rDrone();updateDashStats();CM('mo-drone');toast(eid?'Report updated!':'Report filed!','ok');}
-function saveMin(){const eid=+G('min-id').value||0;const d={type:G('min-type').value,date:G('min-date').value,time:G('min-time').value,subj:G('min-subj').value,loc:G('min-loc').value,called:G('min-called').value,rec:G('min-rec').value,pres:G('min-pres').value,abs:G('min-abs').value,body:G('min-body').value,adj:G('min-adj').value,deptId:CU.deptId};if(!d.subj){toast('Enter a meeting title','err');return;}d.id=eid||++uid;upsertRecord('minutes',d);rMin();updateDashStats();CM('mo-min');toast(eid?'Minutes updated!':'Minutes saved!','ok');}
-function saveEvt(){const eid=+G('evt-id').value||0;const d={nm:G('evt-nm').value,type:G('evt-type').value,status:G('evt-status').value,date:G('evt-date').value,time:G('evt-time').value,loc:G('evt-loc').value,desc:G('evt-desc').value,con:G('evt-con').value,deptId:CU.deptId};if(!d.nm){toast('Enter an event title','err');return;}d.id=eid||++uid;upsertRecord('events',d);rEvt();rDashEvts();CM('mo-evt');toast(eid?'Event updated!':'Event added!','ok');}
-function saveEquip(){const eid=+G('equip-id').value||0;const d={nm:G('equip-nm').value,type:G('equip-type').value,make:G('equip-make').value,yr:G('equip-yr').value,ser:G('equip-ser').value,price:G('equip-price').value,cond:G('equip-cond').value,loc:G('equip-loc').value,asgn:G('equip-asgn').value,svc:G('equip-svc').value,notes:G('equip-notes').value,deptId:CU.deptId};d.id=eid||++uid;upsertRecord('equipment',d);rEquip();updateDashStats();CM('mo-equip');toast(eid?'Equipment updated!':'Equipment added!','ok');}
-function saveMaint(){const eid=+G('maint-id').value||0;const d={equip:G('maint-equip').value,type:G('maint-type').value,date:G('maint-date').value,next:G('maint-next').value,ven:G('maint-ven').value,cost:G('maint-cost').value,desc:G('maint-desc').value,deptId:CU.deptId};d.id=eid||++uid;upsertRecord('maintenance',d);rMaint();rDashMaint();CM('mo-maint');toast(eid?'Record updated!':'Maintenance logged!','ok');}
+function saveDrone(){const eid=+G('drone-id').value||0;const d={num:G('drone-num').value,date:G('drone-date').value,unit:G('drone-unit').value,mission:G('drone-mission').value,toff:G('drone-toff').value,land:G('drone-land').value,dur:G('drone-dur').value,alt:G('drone-alt').value,loc:G('drone-loc').value,pilot:G('drone-pilot').value,obs:G('drone-obs').value,wx:G('drone-wx').value,status:G('drone-status').value,sum:G('drone-sum').value,find:G('drone-find').value,deptId:CU.deptId};d.id=eid||newId();upsertRecord('drones',d);rDrone();updateDashStats();CM('mo-drone');toast(eid?'Report updated!':'Report filed!','ok');}
+function saveMin(){const eid=+G('min-id').value||0;const d={type:G('min-type').value,date:G('min-date').value,time:G('min-time').value,subj:G('min-subj').value,loc:G('min-loc').value,called:G('min-called').value,rec:G('min-rec').value,pres:G('min-pres').value,abs:G('min-abs').value,body:G('min-body').value,adj:G('min-adj').value,deptId:CU.deptId};if(!d.subj){toast('Enter a meeting title','err');return;}d.id=eid||newId();upsertRecord('minutes',d);rMin();updateDashStats();CM('mo-min');toast(eid?'Minutes updated!':'Minutes saved!','ok');}
+function saveEvt(){const eid=+G('evt-id').value||0;const d={nm:G('evt-nm').value,type:G('evt-type').value,status:G('evt-status').value,date:G('evt-date').value,time:G('evt-time').value,loc:G('evt-loc').value,desc:G('evt-desc').value,con:G('evt-con').value,deptId:CU.deptId};if(!d.nm){toast('Enter an event title','err');return;}d.id=eid||newId();upsertRecord('events',d);rEvt();rDashEvts();CM('mo-evt');toast(eid?'Event updated!':'Event added!','ok');}
+function saveEquip(){const eid=+G('equip-id').value||0;const d={nm:G('equip-nm').value,type:G('equip-type').value,make:G('equip-make').value,yr:G('equip-yr').value,ser:G('equip-ser').value,price:G('equip-price').value,cond:G('equip-cond').value,loc:G('equip-loc').value,asgn:G('equip-asgn').value,svc:G('equip-svc').value,notes:G('equip-notes').value,deptId:CU.deptId};d.id=eid||newId();upsertRecord('equipment',d);rEquip();updateDashStats();CM('mo-equip');toast(eid?'Equipment updated!':'Equipment added!','ok');}
+function saveMaint(){const eid=+G('maint-id').value||0;const d={equip:G('maint-equip').value,type:G('maint-type').value,date:G('maint-date').value,next:G('maint-next').value,ven:G('maint-ven').value,cost:G('maint-cost').value,desc:G('maint-desc').value,deptId:CU.deptId};d.id=eid||newId();upsertRecord('maintenance',d);rMaint();rDashMaint();CM('mo-maint');toast(eid?'Record updated!':'Maintenance logged!','ok');}
 function savePers(){
   const eid=+G('pers-id').value||0;
   const d={f:G('pers-f').value,l:G('pers-l').value,em:G('pers-em').value,pos:G('pers-pos').value,ph:G('pers-ph').value,badge:G('pers-badge').value,yrs:G('pers-yrs').value,addr:G('pers-addr').value,ecn:G('pers-ecn').value,ecp:G('pers-ecp').value,status:G('pers-status').value,deptId:CU.deptId};
-  d.id=eid||++uid;
+  d.id=eid||newId();
   upsertRecord('personnel',d);
+  // Also update users collection so the live listener picks it up
+  const userMatch=(_cache['__users']||[]).find(u=>u.em&&u.em.toLowerCase()===d.em.toLowerCase()&&u.deptId===CU.deptId);
+  if(userMatch){ fbSaveUser({...userMatch,...{f:d.f,l:d.l,ph:d.ph,badge:d.badge,yrs:d.yrs,pos:d.pos,addr:d.addr,ecn:d.ecn,ecp:d.ecp}}).catch(()=>{}); }
   // Sync to users table so login profile stays in sync
   const users=getUsers();
   const uIdx=users.findIndex(u=>u.em.toLowerCase()===d.em.toLowerCase()&&u.deptId===CU.deptId);
@@ -2438,12 +2830,12 @@ function savePers(){
   }
   rPers();updateDashStats();CM('mo-pers');toast(eid?'Member updated!':'Member added!','ok');
 }
-function saveFin(){const eid=+G('fin-id').value||0;const d={type:G('fin-type').value,cat:G('fin-cat').value,amt:G('fin-amt').value,date:G('fin-date').value,desc:G('fin-desc').value,ven:G('fin-ven').value,deptId:CU.deptId};d.id=eid||++uid;upsertRecord('finance',d);rFin();CM('mo-fin');toast(eid?'Transaction updated!':'Transaction recorded!','ok');}
+function saveFin(){const eid=+G('fin-id').value||0;const d={type:G('fin-type').value,cat:G('fin-cat').value,amt:G('fin-amt').value,date:G('fin-date').value,desc:G('fin-desc').value,ven:G('fin-ven').value,deptId:CU.deptId};d.id=eid||newId();upsertRecord('finance',d);rFin();CM('mo-fin');toast(eid?'Transaction updated!':'Transaction recorded!','ok');}
 
 function saveFr(){
   const eid=+G('fr-id').value||0;
   const d={nm:G('fr-nm').value,type:G('fr-type').value,date:G('fr-date').value,goal:G('fr-goal').value,raised:G('fr-raised').value,exp:G('fr-exp').value,status:G('fr-status').value,desc:G('fr-desc').value,deptId:CU.deptId};
-  d.id=eid||++uid;
+  d.id=eid||newId();
   upsertRecord('fundraisers',d);
 
   // ── Auto-sync to Finance ──
@@ -2457,14 +2849,14 @@ function saveFr(){
       const existing=fin.findIndex(f=>f.srcType==='fundraiser'&&f.srcId===d.id&&f.type==='Income');
       const entry={type:'Income',cat:'Fundraiser',amt:raised,date:d.date,desc:d.nm,ven:'',srcType:'fundraiser',srcId:d.id,deptId:CU.deptId};
       if(existing>=0){fin[existing]={...fin[existing],...entry};}
-      else{entry.id=++uid;fin.push(entry);}
+      else{entry.id=newId();fin.push(entry);}
     }
     // Expense entry for fundraiser costs
     if(exp>0){
       const existing=fin.findIndex(f=>f.srcType==='fundraiser'&&f.srcId===d.id&&f.type==='Expense');
       const entry={type:'Expense',cat:'Fundraiser',amt:exp,date:d.date,desc:d.nm+' — Expenses',ven:'',srcType:'fundraiser',srcId:d.id,deptId:CU.deptId};
       if(existing>=0){fin[existing]={...fin[existing],...entry};}
-      else{entry.id=++uid;fin.push(entry);}
+      else{entry.id=newId();fin.push(entry);}
     }
     _cache['finance']=fin; fin.forEach(r=>fbSaveRecord('finance',r).catch(()=>{}));
     rFin();
@@ -2479,7 +2871,7 @@ function saveFr(){
 function saveGr(){
   const eid=+G('gr-id').value||0;
   const d={nm:G('gr-nm').value,org:G('gr-org').value,type:G('gr-type').value,req:G('gr-req').value,award:G('gr-award').value||0,dead:G('gr-dead').value,status:G('gr-status').value,desc:G('gr-desc').value,notes:G('gr-notes').value,deptId:CU.deptId};
-  d.id=eid||++uid;
+  d.id=eid||newId();
   upsertRecord('grants',d);
 
   // ── Auto-sync to Finance when Awarded ──
@@ -2489,7 +2881,7 @@ function saveGr(){
     const existing=fin.findIndex(f=>f.srcType==='grant'&&f.srcId===d.id);
     const entry={type:'Income',cat:'Grant',amt:awarded,date:d.dead||today(),desc:d.nm+(d.org?' — '+d.org:''),ven:d.org||'',srcType:'grant',srcId:d.id,deptId:CU.deptId};
     if(existing>=0){fin[existing]={...fin[existing],...entry};}
-    else{entry.id=++uid;fin.push(entry);}
+    else{entry.id=newId();fin.push(entry);}
     _cache['finance']=fin; fin.forEach(r=>fbSaveRecord('finance',r).catch(()=>{}));
     rFin();
     toast((eid?'Grant updated':'Grant saved')+' — Finance auto-updated ✓','ok');
@@ -2522,7 +2914,7 @@ function go(page,el){
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   if(el) el.classList.add('on');
   const pg=G('pg-'+page); if(pg) pg.classList.add('on');
-  if(page==='userpro') loadUserPro();
+  if(page==='userpro'){ loadUserPro(); setTimeout(syncThemeToggle,50); }
   if(page==='map'){
     setTimeout(()=>{
       if(typeof L === 'undefined'){ toast('Map library still loading, try again in a moment','warn'); return; }
@@ -2647,6 +3039,9 @@ function waitForFB(cb){
   if(window.FB_READY) cb();
   else document.addEventListener('fb-ready', cb, {once:true});
 }
+// Apply saved theme immediately on load
+initTheme();
+
 waitForFB(()=>{
   window.fbOnAuth(async user=>{
     if(user){
@@ -2689,6 +3084,43 @@ function closeMobMore(){
 }
 // Sync mobile nav when desktop nav is used
 
+
+// ── THEME / DARK-LIGHT MODE ──
+function toggleTheme(isLight){
+  if(isLight){
+    document.body.classList.add('light-mode');
+    localStorage.setItem('fc_theme','light');
+  } else {
+    document.body.classList.remove('light-mode');
+    localStorage.setItem('fc_theme','dark');
+  }
+  const mc=document.querySelector('meta[name="theme-color"]');
+  if(mc) mc.content=isLight?'#ffffff':'#ff4500';
+  syncThemeToggle();
+}
+
+function initTheme(){
+  const saved=localStorage.getItem('fc_theme');
+  const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;
+  // Use saved pref, fall back to system preference (default dark)
+  const useDark = saved ? saved==='dark' : true;
+  toggleTheme(!useDark);
+}
+
+function syncThemeToggle(){
+  const isLight=document.body.classList.contains('light-mode');
+  // Profile page toggle
+  const tog=G('theme-toggle');
+  if(tog) tog.checked=isLight;
+  const lbl=G('theme-label');
+  if(lbl) lbl.textContent=isLight?'☀️ Light':'🌑 Dark';
+  // Mobile More sheet button
+  const mIcon=G('mob-theme-icon');
+  const mTxt=G('mob-theme-txt');
+  if(mIcon) mIcon.textContent=isLight?'🌑':'☀️';
+  if(mTxt)  mTxt.textContent=isLight?'Dark Mode':'Light Mode';
+
+}
 
 // Register service worker for PWA
 if('serviceWorker' in navigator){
