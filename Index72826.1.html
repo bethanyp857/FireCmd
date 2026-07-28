@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Department Management System</title>
+  <style>
+    :root {
+      --bg-color: #f4f5f7;
+      --text-color: #000000;
+      --card-bg: #ffffff;
+      --border-color: #cccccc;
+      --primary-color: #1d4ed8;
+      --danger-color: #dc2626;
+      --secondary-color: #4b5563;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    /* Modals */
+    .mo {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .mo.active { display: flex; }
+
+    .md {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 24px;
+      width: 90vw;
+      max-width: 600px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .md.report-modal { max-width: 900px; }
+
+    .mh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .mt2 { font-size: 1.25rem; font-weight: bold; }
+    .mx { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-color); }
+
+    .fg { display: flex; flex-direction: column; margin-bottom: 12px; }
+    .fg label { font-weight: 600; margin-bottom: 4px; }
+    .fg input, .fg select, .fg textarea {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: var(--card-bg);
+      color: var(--text-color);
+    }
+    .fr2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .mf { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-weight: 600; }
+    .bp { background: var(--primary-color); color: #ffffff !important; }
+    .bd { background: var(--danger-color); color: #ffffff !important; }
+    .bg { background: var(--secondary-color); color: #ffffff !important; }
+    .btn-filter {
+      background: #e5e7eb; color: #000; border: 1px solid var(--border-color); padding: 6px 12px; font-size: 0.9rem; margin-right: 4px; border-radius: 4px; cursor: pointer;
+    }
+    .btn-filter.active {
+      background: var(--primary-color); color: #ffffff; border-color: var(--primary-color);
+    }
+
+    .table-container {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      margin-top: 10px;
+      border-radius: 4px;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid var(--border-color); padding: 10px; text-align: left; }
+    th { position: sticky; top: 0; background: var(--card-bg); z-index: 10; }
+
+    .archive-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      padding: 20px;
+      margin-top: 15px;
+      border-radius: 6px;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      margin: 12px 0;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      #print-report-target, #print-report-target * { visibility: visible; }
+      #print-report-target {
+        position: absolute; left: 0; top: 0; width: 100%;
+        color: #000000 !important; background: #ffffff !important; padding: 20px;
+      }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <h1>Department Portal</h1>
+    
+    <!-- Personnel Section -->
+    <section>
+      <h2>Personnel Management</h2>
+      <button class="btn bp no-print" onclick="openPersonnelModal()">Add Member</button>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Badge #</th>
+              <th>Contact</th>
+              <th class="no-print">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="personnel-list"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Active Reports Section -->
+    <section style="margin-top: 30px;">
+      <h2>Active Department Reports (<span id="active-report-count">0</span>)</h2>
+      <button class="btn bp no-print" onclick="openReportModal()">Create New Report</button>
+
+      <!-- Category Filter Tabs -->
+      <div class="filter-bar no-print">
+        <strong>Filter Category:</strong>
+        <button class="btn-filter active" onclick="setCategoryFilter('All', this)">All</button>
+        <button class="btn-filter" onclick="setCategoryFilter('Incident', this)">Incident</button>
+        <button class="btn-filter" onclick="setCategoryFilter('Drone', this)">Drone</button>
+        <button class="btn-filter" onclick="setCategoryFilter('Meetings', this)">Meetings</button>
+        <button class="btn-filter" onclick="setCategoryFilter('Maintenance', this)">Maintenance</button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Type / Detail</th>
+              <th>Title / Location</th>
+              <th>Summary</th>
+              <th class="no-print">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="reports-list"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Yearly Archives Explorer Section -->
+    <section style="margin-top: 40px; border-top: 2px solid var(--border-color); padding-top: 20px;">
+      <h2>Yearly Archived Reports & Records</h2>
+      <p style="font-size: 0.9rem; color: #555;">Select a past year to review all incident, drone, meeting, and maintenance records filed during that period.</p>
+
+      <div class="filter-bar no-print">
+        <label for="archive-year-select"><strong>Select Archive Year:</strong></label>
+        <select id="archive-year-select" onchange="renderArchives()" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color);">
+        </select>
+      </div>
+
+      <div id="archives-container"></div>
+    </section>
+  </div>
+
+  <div id="print-report-target"></div>
+
+  <!-- Personnel Modal -->
+  <div id="mo-pers" class="mo">
+    <div class="md">
+      <div class="mh">
+        <div class="mt2">MEMBER DETAILS</div>
+        <button class="mx" onclick="CM('mo-pers')">✕</button>
+      </div>
+      <div class="mb">
+        <input type="hidden" id="pers-id">
+        <div class="fr2">
+          <div class="fg"><label>First Name</label><input id="pers-fname"></div>
+          <div class="fg"><label>Last Name</label><input id="pers-lname"></div>
+        </div>
+        <div class="fr2">
+          <div class="fg">
+            <label>Role / Position</label>
+            <select id="pers-role">
+              <option>Chief</option>
+              <option>Asst. Chief</option>
+              <option>Captain</option>
+              <option>Firefighter</option>
+            </select>
+          </div>
+          <div class="fg"><label>Badge #</label><input id="pers-bdg"></div>
+        </div>
+        <div class="fr2">
+          <div class="fg"><label>Email</label><input type="email" id="pers-em"></div>
+          <div class="fg"><label>Phone</label><input type="tel" id="pers-ph"></div>
+        </div>
+      </div>
+      <div class="mf">
+        <button class="btn bg" onclick="CM('mo-pers')">Cancel</button>
+        <button class="btn bp" onclick="savePersonnel()">💾 Save Member</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unified Report Modal -->
+  <div id="mo-report" class="mo">
+    <div class="md report-modal">
+      <div class="mh">
+        <div class="mt2" id="report-modal-header">FILE REPORT</div>
+        <button class="mx" onclick="CM('mo-report')">✕</button>
+      </div>
+      <div class="mb">
+        <input type="hidden" id="rep-id">
+        <div class="fr2">
+          <div class="fg">
+            <label>Report Category</label>
+            <select id="rep-category">
+              <option value="Incident">Incident</option>
+              <option value="Drone">Drone Operations</option>
+              <option value="Meetings">Meetings</option>
+              <option value="Maintenance">Maintenance</option>
+            </select>
+          </div>
+          <div class="fg"><label>Report Date</label><input type="date" id="rep-date"></div>
+        </div>
+        <div class="fr2">
+          <div class="fg"><label>Type / Sub-type</label><input id="rep-type" placeholder="e.g. Structure Fire, Routine Patrol, Training, Vehicle Check"></div>
+          <div class="fg"><label>Title / Location / Target</label><input id="rep-title" placeholder="Brief subject or location"></div>
+        </div>
+        <div class="fg">
+          <label>Detailed Narrative / Log</label>
+          <textarea id="rep-notes" style="min-height: 200px;" placeholder="Full report notes, actions taken, outcomes..."></textarea>
+        </div>
+      </div>
+      <div class="mf">
+        <button class="btn bg" onclick="CM('mo-report')">Cancel</button>
+        <button class="btn bp" onclick="printCurrentReport()">🖨️ Print Report</button>
+        <button class="btn bp" onclick="saveReport()">💾 Save Report</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeCategoryFilter = 'All';
+
+    const defaultData = {
+      personnel: [
+        { id: "1", fname: "John", lname: "Doe", role: "Captain", bdg: "101", em: "jdoe@dept.org", ph: "555-0192" },
+        { id: "2", fname: "Jane", lname: "Smith", role: "Firefighter", bdg: "104", em: "jsmith@dept.org", ph: "555-0144" }
+      ],
+      reports: [
+        { id: "r1", category: "Incident", date: "2026-02-10", incidentType: "EMS Call", title: "Main St Assist", notes: "Patient evaluated and transferred." },
+        { id: "r2", category: "Drone", date: "2026-03-15", incidentType: "Search & Rescue", title: "North Sector Flight", notes: "Flight log completed successfully." },
+        { id: "r3", category: "Maintenance", date: "2026-04-01", incidentType: "Engine 1 Check", title: "Monthly Inspection", notes: "Oil level topped off, pump tested." }
+      ],
+      archives: []
+    };
+
+    let appData = defaultData;
+
+    window.onload = function() {
+      loadState();
+      dedupePersonnel();
+      handleYearlyArchive();
+      renderPersonnel();
+      renderReports();
+      populateArchiveYearDropdown();
+      renderArchives();
+    };
+
+    function loadState() {
+      const saved = localStorage.getItem('dept_app_data');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+
+          if (Array.isArray(parsed.personnel)) {
+            parsed.personnel = parsed.personnel.map(p => ({
+              ...p,
+              fname: p.fname || p.fn || '',
+              lname: p.lname || p.ln || ''
+            }));
+          }
+
+          if (Array.isArray(parsed.reports)) {
+            parsed.reports = parsed.reports.map(r => ({
+              ...r,
+              category: r.category || 'Incident',
+              incidentType: r.incidentType || r.type || ''
+            }));
+          }
+
+          appData = {
+            personnel: parsed.personnel || defaultData.personnel,
+            reports: parsed.reports || defaultData.reports,
+            archives: parsed.archives || []
+          };
+        } catch (e) {
+          console.error("Error reading saved data:", e);
+          appData = defaultData;
+        }
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem('dept_app_data', JSON.stringify(appData));
+      } catch (e) {
+        console.error("Storage write failed:", e);
+      }
+    }
+
+    function dedupePersonnel() {
+      if (!Array.isArray(appData.personnel)) return;
+      const uniqueMap = new Map();
+      appData.personnel.forEach(m => {
+        const fname = (m.fname || m.fn || '').trim().toLowerCase();
+        const lname = (m.lname || m.ln || '').trim().toLowerCase();
+        const key = (fname || lname) ? `${fname}_${lname}` : m.id;
+
+        if (!uniqueMap.has(key)) {
+          uniqueMap.set(key, { ...m });
+        }
+      });
+      appData.personnel = Array.from(uniqueMap.values());
+      saveState();
+    }
+
+    function renderPersonnel() {
+      const list = document.getElementById('personnel-list');
+      if (!list) return;
+      list.innerHTML = '';
+      
+      (appData.personnel || []).forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.fname || ''} ${p.lname || ''}</td>
+          <td>${p.role || ''}</td>
+          <td>${p.bdg || 'N/A'}</td>
+          <td>${p.em || ''} ${p.ph ? '| ' + p.ph : ''}</td>
+          <td class="no-print">
+            <button class="btn bg" onclick="editPersonnel('${p.id}')">Edit</button>
+            <button class="btn bd" onclick="deletePersonnel('${p.id}')">Delete</button>
+          </td>
+        `;
+        list.appendChild(tr);
+      });
+    }
+
+    function setCategoryFilter(cat, btnElement) {
+      activeCategoryFilter = cat;
+      document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+      if (btnElement) btnElement.classList.add('active');
+      renderReports();
+    }
+
+    function renderReports() {
+      const list = document.getElementById('reports-list');
+      const countEl = document.getElementById('active-report-count');
+      if (!list) return;
+      list.innerHTML = '';
+
+      let reportsToDisplay = appData.reports || [];
+      if (activeCategoryFilter !== 'All') {
+        reportsToDisplay = reportsToDisplay.filter(r => (r.category || 'Incident') === activeCategoryFilter);
+      }
+
+      if (countEl) countEl.innerText = reportsToDisplay.length.toString();
+
+      reportsToDisplay.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.date || ''}</td>
+          <td><strong>${r.category || 'Incident'}</strong></td>
+          <td>${r.incidentType || ''}</td>
+          <td>${r.title || ''}</td>
+          <td>${r.notes ? r.notes.substring(0, 35) + '...' : ''}</td>
+          <td class="no-print">
+            <button class="btn bg" onclick="openReportModal('${r.id}')">Open / Edit</button>
+            <button class="btn bp" onclick="printSingleReport('${r.id}')">Print</button>
+            <button class="btn bd" onclick="deleteReport('${r.id}')">Delete</button>
+          </td>
+        `;
+        list.appendChild(tr);
+      });
+    }
+
+    function populateArchiveYearDropdown() {
+      const select = document.getElementById('archive-year-select');
+      if (!select) return;
+      select.innerHTML = '';
+
+      if (!appData.archives || appData.archives.length === 0) {
+        select.innerHTML = `<option value="">No archives found</option>`;
+        return;
+      }
+
+      appData.archives.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.year;
+        opt.innerText = `Year ${a.year} (${a.reports ? a.reports.length : 0} Total Records)`;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderArchives() {
+      const container = document.getElementById('archives-container');
+      const select = document.getElementById('archive-year-select');
+      if (!container || !select) return;
+
+      const selectedYear = select.value;
+      container.innerHTML = '';
+
+      if (!selectedYear || !appData.archives || appData.archives.length === 0) {
+        container.innerHTML = `<p style="color: #666;">No historical yearly records stored yet.</p>`;
+        return;
+      }
+
+      const archiveRecord = appData.archives.find(a => a.year.toString() === selectedYear.toString());
+      if (!archiveRecord) return;
+
+      const div = document.createElement('div');
+      div.className = 'archive-card';
+
+      // Group archived reports by Category
+      const categories = ['Incident', 'Drone', 'Meetings', 'Maintenance'];
+      let contentHtml = `
+        <h3>📁 Archived Master File for Year: ${archiveRecord.year}</h3>
+        <p style="font-size: 0.85rem; color: #555;">Archived on: ${new Date(archiveRecord.archivedOn).toLocaleDateString()}</p>
+      `;
+
+      categories.forEach(cat => {
+        const catReports = (archiveRecord.reports || []).filter(r => (r.category || 'Incident') === cat);
+        contentHtml += `
+          <details style="margin-top: 10px;">
+            <summary style="font-weight: bold; cursor: pointer; padding: 6px 0;">
+              ${cat} Reports (${catReports.length})
+            </summary>
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type/Detail</th>
+                  <th>Title / Location</th>
+                  <th>Narrative</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${catReports.length === 0 ? '<tr><td colspan="5">No records in this category.</td></tr>' : ''}
+                ${catReports.map(r => `
+                  <tr>
+                    <td>${r.date || ''}</td>
+                    <td>${r.incidentType || ''}</td>
+                    <td>${r.title || ''}</td>
+                    <td>${r.notes || ''}</td>
+                    <td><button class="btn bp" onclick="printSingleReport('${r.id}')">Print</button></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </details>
+        `;
+      });
+
+      div.innerHTML = contentHtml;
+      container.appendChild(div);
+    }
+
+    function handleYearlyArchive() {
+      const currentYear = new Date().getFullYear();
+      const lastArchivedYear = localStorage.getItem('last_archived_year');
+
+      const reportsToArchive = (appData.reports || []).filter(r => {
+        if (!r.date) return false;
+        const repYear = parseInt(r.date.split('-')[0], 10);
+        return !isNaN(repYear) && repYear < currentYear;
+      });
+
+      if (reportsToArchive.length > 0) {
+        if (!appData.archives) appData.archives = [];
+
+        // Archive into respective years
+        reportsToArchive.forEach(rep => {
+          const repYear = rep.date.split('-')[0];
+          let folder = appData.archives.find(a => a.year.toString() === repYear.toString());
+          if (!folder) {
+            folder = { year: repYear, archivedOn: new Date().toISOString(), reports: [] };
+            appData.archives.push(folder);
+          }
+          folder.reports.push(rep);
+        });
+
+        // Retain only current/future reports in the active table
+        appData.reports = appData.reports.filter(r => {
+          if (!r.date) return true;
+          const repYear = parseInt(r.date.split('-')[0], 10);
+          return isNaN(repYear) || repYear >= currentYear;
+        });
+
+        localStorage.setItem('last_archived_year', currentYear.toString());
+        saveState();
+      }
+    }
+
+    function printSingleReport(reportId) {
+      let rep = (appData.reports || []).find(r => r.id === reportId);
+
+      if (!rep && appData.archives) {
+        for (const arch of appData.archives) {
+          rep = (arch.reports || []).find(r => r.id === reportId);
+          if (rep) break;
+        }
+      }
+
+      if (!rep) return;
+
+      const printContainer = document.getElementById('print-report-target');
+      printContainer.innerHTML = `
+        <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+          <h1>DEPARTMENT REPORT - ${ (rep.category || 'Incident').toUpperCase() }</h1>
+          <p><strong>Date:</strong> ${rep.date || 'N/A'} | <strong>Sub-type:</strong> ${rep.incidentType || 'N/A'}</p>
+        </div>
+        <h3>${rep.title || 'Untitled'}</h3>
+        <p style="white-space: pre-wrap; line-height: 1.5;">${rep.notes || ''}</p>
+      `;
+      window.print();
+    }
+
+    function printCurrentReport() {
+      const id = document.getElementById('rep-id').value;
+      if (id) {
+        printSingleReport(id);
+      } else {
+        alert("Please save the report before printing.");
+      }
+    }
+
+    function CM(modalId) {
+      const el = document.getElementById(modalId);
+      if (el) el.classList.remove('active');
+    }
+
+    function openPersonnelModal() {
+      document.getElementById('pers-id').value = '';
+      document.getElementById('pers-fname').value = '';
+      document.getElementById('pers-lname').value = '';
+      document.getElementById('pers-bdg').value = '';
+      document.getElementById('pers-em').value = '';
+      document.getElementById('pers-ph').value = '';
+      document.getElementById('mo-pers').classList.add('active');
+    }
+
+    function editPersonnel(id) {
+      const p = appData.personnel.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('pers-id').value = p.id;
+      document.getElementById('pers-fname').value = p.fname || p.fn || '';
+      document.getElementById('pers-lname').value = p.lname || p.ln || '';
+      document.getElementById('pers-role').value = p.role || 'Firefighter';
+      document.getElementById('pers-bdg').value = p.bdg || '';
+      document.getElementById('pers-em').value = p.em || '';
+      document.getElementById('pers-ph').value = p.ph || '';
+      document.getElementById('mo-pers').classList.add('active');
+    }
+
+    function deletePersonnel(id) {
+      if (confirm("Are you sure you want to delete this member?")) {
+        appData.personnel = appData.personnel.filter(x => x.id !== id);
+        saveState();
+        renderPersonnel();
+      }
+    }
+
+    function savePersonnel() {
+      const id = document.getElementById('pers-id').value;
+      const fname = document.getElementById('pers-fname').value.trim();
+      const lname = document.getElementById('pers-lname').value.trim();
+
+      if (!fname || !lname) return alert("First and Last Name are required.");
+
+      if (id) {
+        const index = appData.personnel.findIndex(x => x.id === id);
+        if (index !== -1) {
+          appData.personnel[index] = {
+            id, fname, lname,
+            role: document.getElementById('pers-role').value,
+            bdg: document.getElementById('pers-bdg').value,
+            em: document.getElementById('pers-em').value,
+            ph: document.getElementById('pers-ph').value
+          };
+        }
+      } else {
+        appData.personnel.push({
+          id: Date.now().toString(),
+          fname, lname,
+          role: document.getElementById('pers-role').value,
+          bdg: document.getElementById('pers-bdg').value,
+          em: document.getElementById('pers-em').value,
+          ph: document.getElementById('pers-ph').value
+        });
+      }
+
+      dedupePersonnel();
+      saveState();
+      renderPersonnel();
+      CM('mo-pers');
+    }
+
+    function openReportModal(id = null) {
+      if (id) {
+        let r = appData.reports.find(x => x.id === id);
+        if (r) {
+          document.getElementById('rep-id').value = r.id;
+          document.getElementById('rep-category').value = r.category || 'Incident';
+          document.getElementById('rep-date').value = r.date || '';
+          document.getElementById('rep-type').value = r.incidentType || r.type || '';
+          document.getElementById('rep-title').value = r.title || '';
+          document.getElementById('rep-notes').value = r.notes || '';
+        }
+      } else {
+        document.getElementById('rep-id').value = '';
+        document.getElementById('rep-category').value = activeCategoryFilter !== 'All' ? activeCategoryFilter : 'Incident';
+        document.getElementById('rep-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('rep-type').value = '';
+        document.getElementById('rep-title').value = '';
+        document.getElementById('rep-notes').value = '';
+      }
+      document.getElementById('mo-report').classList.add('active');
+    }
+
+    function deleteReport(id) {
+      if (confirm("Are you sure you want to delete this report?")) {
+        appData.reports = appData.reports.filter(x => x.id !== id);
+        saveState();
+        renderReports();
+      }
+    }
+
+    function saveReport() {
+      const id = document.getElementById('rep-id').value;
+      const category = document.getElementById('rep-category').value;
+      const date = document.getElementById('rep-date').value;
+      const incidentType = document.getElementById('rep-type').value;
+      const title = document.getElementById('rep-title').value;
+      const notes = document.getElementById('rep-notes').value;
+
+      if (!title) return alert("Report title is required.");
+
+      if (id) {
+        const idx = appData.reports.findIndex(x => x.id === id);
+        if (idx !== -1) {
+          appData.reports[idx] = { id, category, date, incidentType, title, notes };
+        }
+      } else {
+        appData.reports.push({
+          id: 'r_' + Date.now(),
+          category, date, incidentType, title, notes
+        });
+      }
+
+      saveState();
+      renderReports();
+      CM('mo-report');
+    }
+  </script>
+</body>
+</html>
